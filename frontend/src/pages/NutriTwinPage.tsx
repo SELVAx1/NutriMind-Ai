@@ -115,7 +115,7 @@ export function NutriTwinPage() {
       {weekly?.patterns && weekly.patterns.length > 0 && (
         <div className="mb-6">
           <h2 className="text-base font-heading font-semibold mb-3">Detected Patterns</h2>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {weekly.patterns.map((p, i) => (
               <Card key={i} padding="sm" className="flex items-start gap-3">
                 {p.type === 'low' ? (
@@ -128,7 +128,7 @@ export function NutriTwinPage() {
                   <p className="text-xs text-text-secondary">{p.message}</p>
                   {p.avg !== undefined && p.target !== undefined && (
                     <div className="flex items-center gap-2 mt-1">
-                      <div className="flex-1 h-1.5 rounded-full bg-border-light overflow-hidden max-w-32">
+                      <div className="flex-1 h-1.5 rounded-full bg-surface-2 overflow-hidden max-w-32">
                         <div className="h-full rounded-full bg-danger" style={{ width: `${Math.min((p.avg / p.target) * 100, 100)}%` }} />
                       </div>
                       <span className="text-xs text-text-muted tabular-nums">{p.avg} / {p.target}</span>
@@ -145,7 +145,7 @@ export function NutriTwinPage() {
       {weekly?.daily && weekly.daily.length > 0 && (
         <div className="mb-6">
           <h2 className="text-base font-heading font-semibold mb-3">Daily Intake</h2>
-          <div className="space-y-1">
+          <div className="flex flex-col gap-1">
             {weekly.daily.map((d) => (
               <Card key={d.date} padding="sm" className="flex items-center gap-3">
                 <span className="text-xs text-text-muted w-20">{new Date(d.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
@@ -181,13 +181,13 @@ export function NutriTwinPage() {
         </Button>
 
         {whatIfResult && !whatIfResult.error && (
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 flex flex-col gap-3">
             <div className="grid grid-cols-2 gap-3">
-              <Card padding="sm" className="bg-red-50/50">
+              <Card padding="sm" className="bg-red-500/15/50">
                 <p className="text-xs text-text-muted mb-1">Current: {whatIfResult.original.name}</p>
                 <p className="text-sm font-medium">{whatIfResult.original.nutrition_per_serving.calories} kcal · {whatIfResult.original.nutrition_per_serving.protein}g protein</p>
               </Card>
-              <Card padding="sm" className="bg-green-50/50">
+              <Card padding="sm" className="bg-emerald-500/15">
                 <p className="text-xs text-text-muted mb-1">Replace with: {whatIfResult.replacement.name}</p>
                 <p className="text-sm font-medium">{whatIfResult.replacement.nutrition_per_serving.calories} kcal · {whatIfResult.replacement.nutrition_per_serving.protein}g protein</p>
               </Card>

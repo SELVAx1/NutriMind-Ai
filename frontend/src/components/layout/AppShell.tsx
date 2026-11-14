@@ -5,12 +5,12 @@ import { Header } from './Header'
 
 export function AppShell() {
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen bg-surface-0">
       <Sidebar />
       <MobileNav />
       <main className="app-main">
-        <div className="px-6 lg:px-10 xl:px-12 max-w-[1400px]">
-          <Header />
+        <Header />
+        <div className="page-container py-6">
           <Outlet />
         </div>
       </main>

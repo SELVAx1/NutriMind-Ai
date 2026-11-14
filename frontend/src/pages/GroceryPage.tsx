@@ -71,7 +71,7 @@ export function GroceryPage() {
       )}
 
       {list?.error && (
-        <Card padding="md" className="bg-red-50 border-danger/20 mb-4">
+        <Card padding="md" className="bg-red-500/15 border-danger/20 mb-4">
           <p className="text-sm text-danger">{list.error}</p>
         </Card>
       )}
@@ -93,17 +93,17 @@ export function GroceryPage() {
             </Card>
           </div>
 
-          <div className="space-y-5">
+          <div className="flex flex-col gap-5">
             {Object.entries(grouped).map(([category, items]) => (
               <div key={category}>
                 <h3 className="text-sm font-semibold text-text-secondary mb-2">{category}</h3>
-                <div className="space-y-1">
+                <div className="flex flex-col gap-1">
                   {items.map((item, i) => (
                     <div
                       key={i}
                       className={clsx(
                         'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors',
-                        item.in_pantry ? 'bg-green-50 opacity-60' : 'bg-card border border-border'
+                        item.in_pantry ? 'bg-emerald-500/15 opacity-60' : 'bg-surface-1 border border-border'
                       )}
                     >
                       <button

@@ -1,80 +1,37 @@
-import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
-import { Clock, Flame, IndianRupee } from 'lucide-react'
+import { Clock, Flame, IndianRupee, ArrowRightLeft } from 'lucide-react'
 
 interface MealCardProps {
-  name: string
-  nameTamil?: string
-  calories: number
-  protein: number
-  cost: number
-  prepTime: number
-  tags: string[]
-  imageUrl?: string
-  onSwap?: () => void
+  name: string; nameTamil?: string; calories: number; protein: number
+  cost: number; prepTime: number; tags: string[]; imageUrl?: string; onSwap?: () => void
 }
 
-export function MealCard({
-  name,
-  nameTamil,
-  calories,
-  protein,
-  cost,
-  prepTime,
-  tags,
-  imageUrl,
-  onSwap,
-}: MealCardProps) {
+export function MealCard({ name, nameTamil, calories, protein, cost, prepTime, tags, onSwap }: MealCardProps) {
   return (
-    <Card padding="sm" className="flex gap-4">
-      <div className="w-24 h-24 rounded-xl bg-border-light flex-shrink-0 overflow-hidden">
-        {imageUrl ? (
-          <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-3xl">🍛</div>
-        )}
-      </div>
+    <div className="flex gap-4 items-center p-4 rounded-xl bg-surface-1 border border-border hover:border-text-dim/40 transition-all shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
+      <div className="w-14 h-14 rounded-lg bg-surface-3 flex items-center justify-center text-xl flex-shrink-0">🍛</div>
       <div className="flex-1 min-w-0">
-        <h3 className="font-heading font-semibold text-base truncate">{name}</h3>
-        {nameTamil && (
-          <p className="font-tamil text-sm text-text-secondary truncate">{nameTamil}</p>
+        <p className="text-[13px] font-semibold truncate">{name}</p>
+        {nameTamil && <p className="font-tamil text-[11px] text-text-dim truncate">{nameTamil}</p>}
+        <div className="flex items-center gap-3 mt-1.5 text-[11px] text-text-muted">
+          <span className="flex items-center gap-1"><Flame size={11} className="text-amber-400" />{calories}</span>
+          <span className="text-violet-400 font-semibold">{protein}g</span>
+          <span className="flex items-center gap-0.5"><IndianRupee size={10} />{cost}</span>
+          <span className="flex items-center gap-1"><Clock size={11} />{prepTime}m</span>
+        </div>
+        {tags.length > 0 && (
+          <div className="flex gap-1 mt-1.5">
+            {tags.slice(0, 3).map(t => <Badge key={t} variant={
+              t === 'Vegan' || t === 'Vegetarian' ? 'vegan' : t === 'High protein' ? 'protein' : t === 'Budget friendly' ? 'budget' : t === 'Quick' ? 'quick' : 'default'
+            }>{t}</Badge>)}
+          </div>
         )}
-        <div className="flex items-center gap-3 mt-1.5 text-xs text-text-secondary">
-          <span className="flex items-center gap-1">
-            <Flame size={13} /> {calories} kcal
-          </span>
-          <span className="flex items-center gap-1 text-protein font-medium">
-            {protein}g protein
-          </span>
-          <span className="flex items-center gap-1">
-            <IndianRupee size={12} />{cost}
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock size={13} /> {prepTime} min
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-          {tags.map((tag) => (
-            <Badge
-              key={tag}
-              variant={
-                tag === 'Vegan' || tag === 'Vegetarian' ? 'vegan' :
-                tag === 'High protein' ? 'protein' :
-                tag === 'Budget friendly' ? 'budget' :
-                tag === 'Quick' ? 'quick' : 'default'
-              }
-            >
-              {tag}
-            </Badge>
-          ))}
-          {onSwap && (
-            <Button variant="secondary" size="sm" onClick={onSwap}>
-              Swap
-            </Button>
-          )}
-        </div>
       </div>
-    </Card>
+      {onSwap && (
+        <button onClick={onSwap} className="w-8 h-8 rounded-lg bg-surface-2 border border-border text-text-dim hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer flex items-center justify-center flex-shrink-0">
+          <ArrowRightLeft size={13} />
+        </button>
+      )}
+    </div>
   )
 }

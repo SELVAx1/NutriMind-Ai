@@ -71,7 +71,7 @@ export function FoodLogPage() {
       <h1 className="text-xl font-heading font-bold mb-1">Log a meal</h1>
       <p className="text-sm text-text-secondary mb-6">Search for food, set the quantity, and log it.</p>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div>
           <label className="block text-sm font-medium text-text-secondary mb-2">Meal type</label>
           <div className="grid grid-cols-4 gap-2">
@@ -84,7 +84,7 @@ export function FoodLogPage() {
                   'flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors cursor-pointer',
                   mealType === value
                     ? 'bg-primary text-white border-primary'
-                    : 'border-border text-text-secondary hover:bg-border-light'
+                    : 'border-border text-text-secondary hover:bg-surface-2'
                 )}
               >
                 <span className="text-lg">{emoji}</span>
@@ -102,7 +102,7 @@ export function FoodLogPage() {
         {selectedFood && (
           <>
             <Card padding="sm" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-border-light flex items-center justify-center text-xl">🍛</div>
+              <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center text-xl">🍛</div>
               <div className="flex-1">
                 <p className="text-sm font-semibold">{selectedFood.name}</p>
                 {selectedFood.name_tamil && (
@@ -137,7 +137,7 @@ export function FoodLogPage() {
                       'px-3 py-1 rounded-full text-xs border transition-colors cursor-pointer',
                       quantity === value
                         ? 'bg-primary text-white border-primary'
-                        : 'border-border text-text-secondary hover:bg-border-light'
+                        : 'border-border text-text-secondary hover:bg-surface-2'
                     )}
                   >
                     {label}
@@ -152,7 +152,7 @@ export function FoodLogPage() {
           </>
         )}
 
-        {error && <p className="text-sm text-danger bg-red-50 p-3 rounded-lg">{error}</p>}
+        {error && <p className="text-sm text-danger bg-red-500/15 p-3 rounded-lg">{error}</p>}
 
         <Button type="submit" loading={loading} disabled={!selectedFood} className="w-full">
           Log {selectedFood?.name || 'food'} — {quantity}g

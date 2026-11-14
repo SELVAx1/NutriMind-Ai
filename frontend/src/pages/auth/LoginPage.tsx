@@ -33,7 +33,7 @@ export function LoginPage() {
         <h2 className="text-xl font-heading font-bold mb-1">Welcome back</h2>
         <p className="text-sm text-text-secondary mb-6">Sign in to your account</p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Input
             label="Email"
             type="email"
@@ -52,7 +52,7 @@ export function LoginPage() {
           />
 
           {error && (
-            <p className="text-sm text-danger bg-red-50 p-3 rounded-lg">{error}</p>
+            <p className="text-sm text-danger bg-red-500/15 p-3 rounded-lg">{error}</p>
           )}
 
           <Button type="submit" loading={loading} className="w-full">

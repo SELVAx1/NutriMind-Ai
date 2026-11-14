@@ -93,7 +93,7 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-surface-0 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-lg">
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2.5 mb-2">
@@ -120,7 +120,7 @@ export function OnboardingPage() {
         <Card padding="lg">
           <form onSubmit={handleSubmit}>
             {step === 1 && (
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4">
                 <h2 className="text-lg font-heading font-semibold">Basic Information</h2>
                 <Input label="Full name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" required />
                 <Input label="Age" type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="25" required min="10" max="100" />
@@ -133,7 +133,7 @@ export function OnboardingPage() {
             )}
 
             {step === 2 && (
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4">
                 <h2 className="text-lg font-heading font-semibold">Diet & Preferences</h2>
 
                 <div>
@@ -148,7 +148,7 @@ export function OnboardingPage() {
                           'px-3 py-2 rounded-xl text-sm font-medium border transition-colors cursor-pointer',
                           dietType === value
                             ? 'bg-primary text-white border-primary'
-                            : 'border-border text-text-secondary hover:bg-border-light'
+                            : 'border-border text-text-secondary hover:bg-surface-2'
                         )}
                       >
                         {label}
@@ -169,7 +169,7 @@ export function OnboardingPage() {
                           'px-3 py-1.5 rounded-full text-sm border transition-colors cursor-pointer',
                           region === r
                             ? 'bg-primary text-white border-primary'
-                            : 'border-border text-text-secondary hover:bg-border-light'
+                            : 'border-border text-text-secondary hover:bg-surface-2'
                         )}
                       >
                         {r}
@@ -190,7 +190,7 @@ export function OnboardingPage() {
                           'px-3 py-1.5 rounded-full text-sm border transition-colors cursor-pointer',
                           selectedAllergens.includes(a)
                             ? 'bg-danger text-white border-danger'
-                            : 'border-border text-text-secondary hover:bg-border-light'
+                            : 'border-border text-text-secondary hover:bg-surface-2'
                         )}
                       >
                         {a}
@@ -207,12 +207,12 @@ export function OnboardingPage() {
             )}
 
             {step === 3 && (
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4">
                 <h2 className="text-lg font-heading font-semibold">Goals & Constraints</h2>
 
                 <div>
                   <label className="block text-sm font-medium text-text-secondary mb-2">Activity level</label>
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2">
                     {ACTIVITY_LEVELS.map(({ value, label, desc }) => (
                       <button
                         key={value}
@@ -222,7 +222,7 @@ export function OnboardingPage() {
                           'w-full px-4 py-3 rounded-xl text-left border transition-colors cursor-pointer',
                           activityLevel === value
                             ? 'bg-primary text-white border-primary'
-                            : 'border-border hover:bg-border-light'
+                            : 'border-border hover:bg-surface-2'
                         )}
                       >
                         <span className="text-sm font-medium">{label}</span>
@@ -251,7 +251,7 @@ export function OnboardingPage() {
                   min="5"
                 />
 
-                {error && <p className="text-sm text-danger bg-red-50 p-3 rounded-lg">{error}</p>}
+                {error && <p className="text-sm text-danger bg-red-500/15 p-3 rounded-lg">{error}</p>}
 
                 <div className="flex gap-2">
                   <Button type="button" variant="secondary" onClick={() => setStep(2)} className="flex-1">Back</Button>

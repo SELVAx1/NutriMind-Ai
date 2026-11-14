@@ -59,7 +59,7 @@ export function TrackerPage() {
 
       <Card padding="md" className="mb-6">
         <h3 className="text-sm font-semibold mb-3">Daily Progress</h3>
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           {progressBars.map(({ label, current, target, unit, color }) => (
             <div key={label}>
               <div className="flex justify-between text-xs mb-1">
@@ -68,7 +68,7 @@ export function TrackerPage() {
                   {current} / {target} {unit}
                 </span>
               </div>
-              <div className="h-2 rounded-full bg-border-light overflow-hidden">
+              <div className="h-2 rounded-full bg-surface-2 overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-700"
                   style={{ width: `${Math.min((current / target) * 100, 100)}%`, backgroundColor: color }}
@@ -87,17 +87,17 @@ export function TrackerPage() {
           <Link to="/food"><Button>Log your first meal</Button></Link>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           {MEAL_ORDER.map((mealType) => {
             const mealItems = allItems.filter((i) => i.mealType === mealType)
             if (mealItems.length === 0) return null
             return (
               <div key={mealType}>
                 <h3 className="text-sm font-semibold mb-2">{MEAL_LABELS[mealType]}</h3>
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                   {mealItems.map((item) => (
                     <Card key={item.id} padding="sm" className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-border-light flex items-center justify-center text-lg">🍛</div>
+                      <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center text-lg">🍛</div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{item.name}</p>
                         {item.nameTamil && <p className="font-tamil text-xs text-text-muted truncate">{item.nameTamil}</p>}
@@ -105,7 +105,7 @@ export function TrackerPage() {
                       </div>
                       <button
                         onClick={() => deleteLogItem(item.id)}
-                        className="p-2 rounded-lg hover:bg-red-50 text-text-muted hover:text-danger transition-colors cursor-pointer"
+                        className="p-2 rounded-lg hover:bg-red-500/15 text-text-muted hover:text-danger transition-colors cursor-pointer"
                       >
                         <Trash2 size={16} />
                       </button>

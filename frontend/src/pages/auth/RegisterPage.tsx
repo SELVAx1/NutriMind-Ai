@@ -63,7 +63,7 @@ export function RegisterPage() {
         <h2 className="text-xl font-heading font-bold mb-1">Create your account</h2>
         <p className="text-sm text-text-secondary mb-6">Start your nutrition journey</p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Input
             label="Email"
             type="email"
@@ -90,7 +90,7 @@ export function RegisterPage() {
           />
 
           {error && (
-            <p className="text-sm text-danger bg-red-50 p-3 rounded-lg">{error}</p>
+            <p className="text-sm text-danger bg-red-500/15 p-3 rounded-lg">{error}</p>
           )}
 
           <Button type="submit" loading={loading} className="w-full">

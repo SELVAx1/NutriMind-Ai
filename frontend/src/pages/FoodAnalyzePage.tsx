@@ -95,7 +95,7 @@ export function FoodAnalyzePage() {
           <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
         </label>
       ) : (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           <div className="relative rounded-2xl overflow-hidden border border-border">
             <img src={imagePreview} alt="Food" className="w-full max-h-64 object-cover" />
             <button
@@ -113,9 +113,9 @@ export function FoodAnalyzePage() {
           )}
 
           {result && (
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
               {result.error ? (
-                <Card padding="md" className="bg-red-50 border-danger/20">
+                <Card padding="md" className="bg-red-500/15 border-danger/20">
                   <div className="flex items-center gap-2 text-danger">
                     <AlertTriangle size={18} />
                     <p className="text-sm">{result.notes}</p>
@@ -132,7 +132,7 @@ export function FoodAnalyzePage() {
 
                   {result.items.map((item, i) => (
                     <Card key={i} padding="sm" className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-border-light flex items-center justify-center text-xl">🍛</div>
+                      <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center text-xl">🍛</div>
                       <div className="flex-1">
                         <p className="text-sm font-semibold">{item.name}</p>
                         {item.name_tamil && <p className="font-tamil text-xs text-text-muted">{item.name_tamil}</p>}
