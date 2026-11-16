@@ -1,269 +1,299 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useProfile } from '@/hooks/useProfile'
-import { calculateBMR, calculateTDEE, calculateMacroTargets } from '@/lib/nutrition'
 import { Card } from '@/components/ui/Card'
-import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { clsx } from 'clsx'
-
-const DIET_TYPES = [
-  { value: 'veg', label: 'Vegetarian' },
-  { value: 'non-veg', label: 'Non-Vegetarian' },
-  { value: 'vegan', label: 'Vegan' },
-  { value: 'eggetarian', label: 'Eggetarian' },
-  { value: 'jain', label: 'Jain' },
-]
-
-const REGIONS = ['South Indian', 'North Indian', 'West Indian', 'East Indian', 'Mixed']
-
-const ACTIVITY_LEVELS = [
-  { value: 'sedentary', label: 'Sedentary', desc: 'Little or no exercise' },
-  { value: 'light', label: 'Light', desc: 'Exercise 1-3 days/week' },
-  { value: 'moderate', label: 'Moderate', desc: 'Exercise 3-5 days/week' },
-  { value: 'active', label: 'Active', desc: 'Exercise 6-7 days/week' },
-  { value: 'very_active', label: 'Very Active', desc: 'Hard exercise daily' },
-]
-
-const COMMON_ALLERGENS = ['Peanut', 'Milk', 'Egg', 'Gluten', 'Soy', 'Tree nuts', 'Shellfish', 'Sesame']
+import { useProfile } from '@/hooks/useProfile'
+import {
+  Apple, ArrowRight, ArrowLeft, Sparkles,
+  User, Utensils, IndianRupee, ShieldCheck
+} from 'lucide-react'
 
 export function OnboardingPage() {
   const navigate = useNavigate()
-  const { createProfile, saveAllergies } = useProfile()
+  const { createProfile } = useProfile()
   const [step, setStep] = useState(1)
-  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const [name, setName] = useState('')
-  const [age, setAge] = useState('')
-  const [height, setHeight] = useState('')
-  const [weight, setWeight] = useState('')
-  const [dietType, setDietType] = useState('veg')
-  const [region, setRegion] = useState('South Indian')
-  const [selectedAllergens, setSelectedAllergens] = useState<string[]>([])
-  const [activityLevel, setActivityLevel] = useState('moderate')
-  const [budget, setBudget] = useState('200')
-  const [cookingTime, setCookingTime] = useState('30')
+  // Form State
+  const [fullName, setFullName] = useState('')
+  const [age, setAge] = useState(25)
+  const [gender, setGender] = useState<'male' | 'female' | 'other'>('female')
+  const [heightCm, setHeightCm] = useState(165)
+  const [weightKg, setWeightKg] = useState(60)
+  const [dietType, setDietType] = useState<any>('veg')
+  const [region, setRegion] = useState('South India (Tamil Nadu)')
+  const [activity, setActivity] = useState<any>('moderate')
+  const [budget, setBudget] = useState(200)
 
-  function toggleAllergen(a: string) {
-    setSelectedAllergens((prev) =>
-      prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]
-    )
-  }
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
+  async function handleFinish() {
+    setSaving(true)
     setError('')
-    setLoading(true)
-
     try {
-      const ageNum = parseInt(age)
-      const heightNum = parseFloat(height)
-      const weightNum = parseFloat(weight)
-
-      const bmr = calculateBMR(weightNum, heightNum, ageNum)
-      const tdee = calculateTDEE(bmr, activityLevel)
-      const targets = calculateMacroTargets(tdee, weightNum)
-
-      await createProfile(
-        {
-          full_name: name,
-          age: ageNum,
-          height_cm: heightNum,
-          weight_kg: weightNum,
-          activity_level: activityLevel as UserProfile['activity_level'],
-          diet_type: dietType as UserProfile['diet_type'],
-          region,
-          budget_daily: parseFloat(budget),
-          max_cooking_min: parseInt(cookingTime),
-        },
-        targets
-      )
-
-      if (selectedAllergens.length > 0) {
-        await saveAllergies(selectedAllergens)
-      }
-
+      await createProfile({
+        full_name: fullName || 'NutriMind Member',
+        age,
+        gender,
+        height_cm: heightCm,
+        weight_kg: weightKg,
+        diet_type: dietType,
+        region,
+        activity_level: activity,
+        budget_daily: budget,
+        max_cooking_min: 30,
+      })
       navigate('/dashboard')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
-    } finally {
-      setLoading(false)
+    } catch (err: any) {
+      setError(err?.message || 'Failed to complete profile')
+      setSaving(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-surface-0 flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center gap-2.5 mb-2">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-white font-bold">N</span>
-            </div>
-            <span className="font-heading font-bold text-xl text-primary">NutriMind</span>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-xl">
+        {/* Brand */}
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="w-12 h-12 rounded-3xl bg-gradient-to-br from-[#7B5E4A] to-[#3B2A20] flex items-center justify-center text-white shadow-lg shadow-[#7B5E4A]/30 mb-3">
+            <Apple className="w-7 h-7 text-[#F2E7D5] stroke-[2.5]" />
           </div>
-          <h1 className="text-2xl font-heading font-bold">Let's set up your profile</h1>
-          <p className="text-sm text-text-secondary mt-1">Step {step} of 3</p>
-          <div className="flex gap-2 justify-center mt-3">
+          <h1 className="page-title text-[26px] font-extrabold text-[#3B2A20] font-heading">
+            Welcome to Nutri<span className="text-[#7B5E4A]">Mind</span> AI
+          </h1>
+          <p className="card-subtitle text-[12px] text-[#7B5E4A] mt-1 font-body">
+            Let's configure your scientific Indian plate profile in 3 quick steps
+          </p>
+
+          {/* Stepper Dots */}
+          <div className="flex items-center gap-2 mt-4">
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
-                className={clsx(
-                  'h-1.5 w-12 rounded-full transition-colors',
-                  s <= step ? 'bg-primary' : 'bg-border'
-                )}
+                className={`h-2 rounded-full transition-all ${
+                  step === s
+                    ? 'w-8 bg-[#7B5E4A]'
+                    : step > s
+                    ? 'w-2 bg-[#7B5E4A]/50'
+                    : 'w-2 bg-[#D1B89A]'
+                }`}
               />
             ))}
           </div>
         </div>
 
-        <Card padding="lg">
-          <form onSubmit={handleSubmit}>
-            {step === 1 && (
-              <div className="flex flex-col gap-4">
-                <h2 className="text-lg font-heading font-semibold">Basic Information</h2>
-                <Input label="Full name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" required />
-                <Input label="Age" type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="25" required min="10" max="100" />
-                <Input label="Height (cm)" type="number" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="165" required min="100" max="250" />
-                <Input label="Weight (kg)" type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="60" required min="20" max="300" />
-                <Button type="button" onClick={() => setStep(2)} className="w-full" disabled={!name || !age || !height || !weight}>
-                  Next
+        <Card padding="lg" className="bg-white border-[#D1B89A] shadow-[0_20px_60px_rgba(59,42,32,0.08)]">
+          {error && (
+            <div className="mb-4 p-3 rounded-2xl bg-[#FDF0EE] text-[#8F3325] text-xs font-semibold">
+              {error}
+            </div>
+          )}
+
+          {/* STEP 1: Biometrics */}
+          {step === 1 && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="border-b border-[#D1B89A]/40 pb-3 mb-4">
+                <h2 className="card-title text-[16px] font-bold text-[#3B2A20] flex items-center gap-2 font-heading">
+                  <User className="w-4 h-4 text-[#7B5E4A]" />
+                  Step 1: Your Biometrics
+                </h2>
+                <p className="card-subtitle text-[11.5px] text-[#7B5E4A]">Used to calculate your basal metabolic rate (Mifflin-St Jeor)</p>
+              </div>
+
+              <div>
+                <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Your Full Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Kaniska Selvaraj"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-4 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Gender</label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value as any)}
+                    className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-3 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
+                  >
+                    <option value="female">Female</option>
+                    <option value="male">Male</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Age</label>
+                  <input
+                    type="number"
+                    value={age}
+                    onChange={(e) => setAge(Number(e.target.value))}
+                    className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-3 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Height (cm)</label>
+                  <input
+                    type="number"
+                    value={heightCm}
+                    onChange={(e) => setHeightCm(Number(e.target.value))}
+                    className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-3 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
+                  />
+                </div>
+                <div>
+                  <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Weight (kg)</label>
+                  <input
+                    type="number"
+                    value={weightKg}
+                    onChange={(e) => setWeightKg(Number(e.target.value))}
+                    className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-3 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end">
+                <Button variant="primary" onClick={() => setStep(2)}>
+                  <span>Continue</span>
+                  <ArrowRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>
-            )}
+            </div>
+          )}
 
-            {step === 2 && (
-              <div className="flex flex-col gap-4">
-                <h2 className="text-lg font-heading font-semibold">Diet & Preferences</h2>
+          {/* STEP 2: Diet & Regional Food Habits */}
+          {step === 2 && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="border-b border-[#D1B89A]/40 pb-3 mb-4">
+                <h2 className="card-title text-[16px] font-bold text-[#3B2A20] flex items-center gap-2 font-heading">
+                  <Utensils className="w-4 h-4 text-[#7B5E4A]" />
+                  Step 2: Dietary Habits & Region
+                </h2>
+                <p className="card-subtitle text-[11.5px] text-[#7B5E4A]">Tailors dish recommendations to your native regional palate</p>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">Diet type</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {DIET_TYPES.map(({ value, label }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => setDietType(value)}
-                        className={clsx(
-                          'px-3 py-2 rounded-xl text-sm font-medium border transition-colors cursor-pointer',
-                          dietType === value
-                            ? 'bg-primary text-white border-primary'
-                            : 'border-border text-text-secondary hover:bg-surface-2'
-                        )}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">Region</label>
-                  <div className="flex flex-wrap gap-2">
-                    {REGIONS.map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => setRegion(r)}
-                        className={clsx(
-                          'px-3 py-1.5 rounded-full text-sm border transition-colors cursor-pointer',
-                          region === r
-                            ? 'bg-primary text-white border-primary'
-                            : 'border-border text-text-secondary hover:bg-surface-2'
-                        )}
-                      >
-                        {r}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">Allergies (if any)</label>
-                  <div className="flex flex-wrap gap-2">
-                    {COMMON_ALLERGENS.map((a) => (
-                      <button
-                        key={a}
-                        type="button"
-                        onClick={() => toggleAllergen(a)}
-                        className={clsx(
-                          'px-3 py-1.5 rounded-full text-sm border transition-colors cursor-pointer',
-                          selectedAllergens.includes(a)
-                            ? 'bg-danger text-white border-danger'
-                            : 'border-border text-text-secondary hover:bg-surface-2'
-                        )}
-                      >
-                        {a}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button type="button" variant="secondary" onClick={() => setStep(1)} className="flex-1">Back</Button>
-                  <Button type="button" onClick={() => setStep(3)} className="flex-1">Next</Button>
+              <div>
+                <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1.5">Diet Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'veg', label: 'Vegetarian', desc: 'Lacto-vegetarian' },
+                    { id: 'eggetarian', label: 'Eggetarian', desc: 'Veg + Eggs' },
+                    { id: 'non-veg', label: 'Non-Vegetarian', desc: 'Chicken, Fish, Eggs' },
+                    { id: 'jain', label: 'Jain Diet', desc: 'No root vegetables' },
+                  ].map((d) => (
+                    <button
+                      type="button"
+                      key={d.id}
+                      onClick={() => setDietType(d.id)}
+                      className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
+                        dietType === d.id
+                          ? 'border-[#7B5E4A] bg-[#F2E7D5] text-[#3B2A20] font-bold shadow-2xs'
+                          : 'border-[#D1B89A]/50 bg-[#FAF7F0] text-[#7B5E4A]'
+                      }`}
+                    >
+                      <p className="text-[13px] font-bold font-heading">{d.label}</p>
+                      <p className="card-subtitle text-[10px] text-[#7B5E4A]">{d.desc}</p>
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
 
-            {step === 3 && (
-              <div className="flex flex-col gap-4">
-                <h2 className="text-lg font-heading font-semibold">Goals & Constraints</h2>
+              <div>
+                <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Region / Cuisine</label>
+                <select
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                  className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-3 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
+                >
+                  <option value="South India (Tamil Nadu)">South India (Tamil Nadu - Millets & Idlis)</option>
+                  <option value="South India (Kerala)">South India (Kerala - Matta Rice & Coconut)</option>
+                  <option value="South India (Karnataka)">South India (Karnataka - Ragi Mudde & Saaru)</option>
+                  <option value="North India">North India (Roti, Rajma & Paneer)</option>
+                  <option value="West India">West India (Gujarat / Maharashtra)</option>
+                </select>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-2">Activity level</label>
-                  <div className="flex flex-col gap-2">
-                    {ACTIVITY_LEVELS.map(({ value, label, desc }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => setActivityLevel(value)}
-                        className={clsx(
-                          'w-full px-4 py-3 rounded-xl text-left border transition-colors cursor-pointer',
-                          activityLevel === value
-                            ? 'bg-primary text-white border-primary'
-                            : 'border-border hover:bg-surface-2'
-                        )}
-                      >
-                        <span className="text-sm font-medium">{label}</span>
-                        <span className={clsx('block text-xs', activityLevel === value ? 'text-white/70' : 'text-text-muted')}>
-                          {desc}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+              <div className="pt-4 flex justify-between">
+                <Button variant="secondary" onClick={() => setStep(1)}>
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  <span>Back</span>
+                </Button>
+                <Button variant="primary" onClick={() => setStep(3)}>
+                  <span>Continue</span>
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: Budget & Lifestyle */}
+          {step === 3 && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="border-b border-[#D1B89A]/40 pb-3 mb-4">
+                <h2 className="card-title text-[16px] font-bold text-[#3B2A20] flex items-center gap-2 font-heading">
+                  <IndianRupee className="w-4 h-4 text-[#7B5E4A]" />
+                  Step 3: Budget & Activity
+                </h2>
+                <p className="card-subtitle text-[11.5px] text-[#7B5E4A]">Ensures meal plans are affordable and energy-matched</p>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="eyebrow-label text-[10px] font-bold text-[#7B5E4A] uppercase">Daily Food Budget</label>
+                  <span className="text-[12px] font-bold text-[#7B5E4A]">₹{budget} / day</span>
                 </div>
-
-                <Input
-                  label="Daily food budget (₹)"
-                  type="number"
+                <input
+                  type="range"
+                  min={50}
+                  max={500}
+                  step={10}
                   value={budget}
-                  onChange={(e) => setBudget(e.target.value)}
-                  placeholder="200"
-                  min="50"
+                  onChange={(e) => setBudget(Number(e.target.value))}
+                  className="w-full accent-[#7B5E4A]"
                 />
-                <Input
-                  label="Max cooking time (minutes)"
-                  type="number"
-                  value={cookingTime}
-                  onChange={(e) => setCookingTime(e.target.value)}
-                  placeholder="30"
-                  min="5"
-                />
-
-                {error && <p className="text-sm text-danger bg-red-500/15 p-3 rounded-lg">{error}</p>}
-
-                <div className="flex gap-2">
-                  <Button type="button" variant="secondary" onClick={() => setStep(2)} className="flex-1">Back</Button>
-                  <Button type="submit" loading={loading} className="flex-1">Complete setup</Button>
+                <div className="flex justify-between text-[10px] text-[#A67C52] font-semibold mt-1">
+                  <span>₹50/day</span>
+                  <span>₹250/day</span>
+                  <span>₹500/day</span>
                 </div>
               </div>
-            )}
-          </form>
+
+              <div>
+                <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Activity Level</label>
+                <select
+                  value={activity}
+                  onChange={(e) => setActivity(e.target.value as any)}
+                  className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-3 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
+                >
+                  <option value="sedentary">Sedentary (Desk Job)</option>
+                  <option value="light">Lightly Active (1-3 days exercise)</option>
+                  <option value="moderate">Moderately Active (Daily walks / workouts)</option>
+                  <option value="active">Active (Heavy physical activity)</option>
+                </select>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-[#FAF7F0] border border-[#D1B89A] flex items-center gap-2 text-[12px] text-[#7B5E4A] font-semibold">
+                <ShieldCheck className="w-4 h-4 shrink-0 text-[#7B5E4A]" />
+                <span>Deterministic ICMR RDA targets will be generated automatically.</span>
+              </div>
+
+              <div className="pt-4 flex justify-between">
+                <Button variant="secondary" onClick={() => setStep(2)}>
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  <span>Back</span>
+                </Button>
+                <Button variant="primary" loading={saving} onClick={handleFinish}>
+                  <Sparkles className="w-4 h-4 mr-1" />
+                  <span>Enter Dashboard</span>
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
     </div>
   )
 }
-
-type UserProfile = import('@/types/database').UserProfile

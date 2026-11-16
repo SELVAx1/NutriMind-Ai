@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
-import type { FoodLogWithItems } from '@/types/database'
+import type { FoodLog, FoodLogItem, FoodItem } from '@/types/database'
+
+export type FoodLogWithItems = FoodLog & {
+  food_log_items: (FoodLogItem & { food_items: FoodItem })[]
+}
 
 export function useTodaysLogs() {
   const { user } = useAuth()
@@ -9,8 +13,12 @@ export function useTodaysLogs() {
   const [loading, setLoading] = useState(true)
 
   async function fetchLogs() {
-    if (!user) return
-    setLoading(true)
+    if (!user) {
+      setLogs([])
+      setLoading(false)
+      return
+    }
+
     const today = new Date().toISOString().split('T')[0]
 
     const { data } = await supabase
@@ -24,7 +32,9 @@ export function useTodaysLogs() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchLogs() }, [user])
+  useEffect(() => {
+    fetchLogs()
+  }, [user])
 
   async function logFood(mealType: string, foodItemId: string, quantityG: number) {
     if (!user) throw new Error('Not authenticated')
@@ -38,24 +48,23 @@ export function useTodaysLogs() {
       .eq('meal_type', mealType)
       .maybeSingle()
 
-    if (!existingLog) {
+    let logId = existingLog?.id
+
+    if (!logId) {
       const { data: newLog, error } = await supabase
         .from('food_logs')
         .insert({ user_id: user.id, log_date: today, meal_type: mealType })
         .select()
         .single()
-      if (error) throw error
-      existingLog = newLog
+      if (error || !newLog) throw error || new Error('Failed to create meal log')
+      logId = newLog.id
     }
 
-    const { error: itemError } = await supabase
-      .from('food_log_items')
-      .insert({
-        food_log_id: existingLog.id,
-        food_item_id: foodItemId,
-        quantity_g: quantityG,
-        source: 'manual',
-      })
+    const { error: itemError } = await supabase.from('food_log_items').insert({
+      food_log_id: logId,
+      food_item_id: foodItemId,
+      quantity_g: quantityG,
+    })
 
     if (itemError) throw itemError
     await fetchLogs()

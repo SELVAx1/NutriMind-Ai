@@ -7,8 +7,9 @@ ACTIVITY_MULTIPLIERS = {
 }
 
 
-def calculate_bmr(weight_kg: float, height_cm: float, age: int) -> float:
-    return 10 * weight_kg + 6.25 * height_cm - 5 * age - 78
+def calculate_bmr(weight_kg: float, height_cm: float, age: int, gender: str = "male") -> float:
+    base = 10 * weight_kg + 6.25 * height_cm - 5 * age
+    return base + 5 if gender == "male" else base - 161
 
 
 def calculate_tdee(bmr: float, activity_level: str) -> int:

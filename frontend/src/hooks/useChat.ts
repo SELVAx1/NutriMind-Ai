@@ -1,68 +1,94 @@
-import { useState } from 'react'
-import { apiPost } from '@/lib/api'
+import { useState, useEffect } from 'react'
+import { apiPost, apiGet } from '@/lib/api'
 
-interface ChatMessage {
+export interface ChatMessageDef {
   id: string
   role: 'user' | 'assistant'
   content: string
-  citations?: { source: string; title: string; similarity: number }[]
-  route_type?: string
-  blocked?: boolean
+  citations?: { source: string; text?: string; section?: string }[]
+  created_at?: string
 }
 
 export function useChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [messages, setMessages] = useState<ChatMessageDef[]>([])
   const [loading, setLoading] = useState(false)
+  const [conversationId, setConversationId] = useState<string | null>(null)
 
-  async function sendMessage(text: string) {
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
+  useEffect(() => {
+    // Try to load latest conversation history if exists
+    apiGet<{ conversations: { id: string }[] }>('/api/chat/conversations')
+      .then(res => {
+        if (res.conversations && res.conversations.length > 0) {
+          const latestId = res.conversations[0].id
+          setConversationId(latestId)
+          apiGet<{ messages: any[] }>(`/api/chat/history/${latestId}`)
+            .then(hist => {
+              if (hist.messages && hist.messages.length > 0) {
+                setMessages(hist.messages.map(m => ({
+                  id: m.id || String(Math.random()),
+                  role: m.role,
+                  content: m.content,
+                  citations: m.citations,
+                  created_at: m.created_at,
+                })))
+              }
+            })
+            .catch(() => {})
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  async function sendMessage(content: string) {
+    const userMsg: ChatMessageDef = {
+      id: String(Date.now()),
       role: 'user',
-      content: text,
+      content,
+      created_at: new Date().toISOString(),
     }
-    setMessages((prev) => [...prev, userMsg])
+    setMessages(prev => [...prev, userMsg])
     setLoading(true)
 
     try {
       const res = await apiPost<{
-        response: string
-        citations: { source: string; title: string; similarity: number }[]
-        route_type: string
-        conversation_id: string
-        blocked: boolean
-      }>('/api/chat/message', {
-        message: text,
-        conversation_id: conversationId,
-      })
+        response?: string
+        reply?: string
+        citations?: { source: string; text?: string; section?: string }[]
+        conversation_id?: string
+        session_id?: string
+      }>(
+        '/api/chat/message',
+        { message: content, conversation_id: conversationId }
+      )
 
-      setConversationId(res.conversation_id)
+      if (res.conversation_id) setConversationId(res.conversation_id)
 
-      const aiMsg: ChatMessage = {
-        id: `ai-${Date.now()}`,
+      const answerText = res.response || res.reply
+      if (!answerText) throw new Error('Empty response from AI')
+
+      const assistantMsg: ChatMessageDef = {
+        id: String(Date.now() + 1),
         role: 'assistant',
-        content: res.response,
-        citations: res.citations,
-        route_type: res.route_type,
-        blocked: res.blocked,
+        content: answerText,
+        citations: res.citations && res.citations.length > 0 ? res.citations : undefined,
+        created_at: new Date().toISOString(),
       }
-      setMessages((prev) => [...prev, aiMsg])
+      setMessages(prev => [...prev, assistantMsg])
     } catch {
-      const errMsg: ChatMessage = {
-        id: `err-${Date.now()}`,
-        role: 'assistant',
-        content: 'Sorry, I couldn\'t process that request. Please check that the backend is running and your API keys are configured.',
-      }
-      setMessages((prev) => [...prev, errMsg])
+      setMessages(prev => [
+        ...prev,
+        {
+          id: String(Date.now() + 1),
+          role: 'assistant',
+          content: 'Could not reach the AI service. Please make sure the backend server is running on port 8000 and try again.',
+          citations: undefined,
+          created_at: new Date().toISOString(),
+        },
+      ])
     } finally {
       setLoading(false)
     }
   }
 
-  function clearChat() {
-    setMessages([])
-    setConversationId(null)
-  }
-
-  return { messages, loading, sendMessage, clearChat }
+  return { messages, loading, sendMessage }
 }

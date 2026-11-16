@@ -1,5 +1,14 @@
 from functools import lru_cache
+from pathlib import Path
 from pydantic_settings import BaseSettings
+
+_env_candidates = [
+    Path(__file__).resolve().parents[2] / ".env",
+    Path(__file__).resolve().parents[1] / ".env",
+    Path(".env"),
+    Path("../.env"),
+]
+_resolved_env = next((str(p) for p in _env_candidates if p.is_file()), ".env")
 
 
 class Settings(BaseSettings):
@@ -25,7 +34,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     cors_origins: str = "http://localhost:5173"
 
-    model_config = {"env_file": "../.env", "env_file_encoding": "utf-8", "extra": "ignore"}
+    model_config = {"env_file": _resolved_env, "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 @lru_cache()

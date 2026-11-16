@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from app.middleware.supabase_auth import get_current_user
 from app.agents.grocery_agent import generate_grocery_list
@@ -20,23 +20,28 @@ async def create_grocery_list(req: GroceryRequest, user=Depends(get_current_user
 @router.get("/lists")
 async def list_grocery_lists(user=Depends(get_current_user)):
     sb = get_supabase()
-    lists = sb.table("grocery_lists").select("*").eq("user_id", user["id"]).order("created_at", desc=True).limit(10).execute()
+    lists = await sb.table("grocery_lists").select("*").eq("user_id", user["id"]).order("created_at", desc=True).limit(10).execute()
     return {"lists": lists.data or []}
 
 
 @router.get("/lists/{list_id}")
 async def get_grocery_list(list_id: str, user=Depends(get_current_user)):
     sb = get_supabase()
-    items = sb.table("grocery_items").select("*").eq("grocery_list_id", list_id).execute()
+    gl = await sb.table("grocery_lists").select("id").eq("id", list_id).eq("user_id", user["id"]).maybe_single().execute()
+    if not gl.data:
+        raise HTTPException(status_code=404, detail="Grocery list not found")
+    items = await sb.table("grocery_items").select("*").eq("grocery_list_id", list_id).execute()
     return {"list_id": list_id, "items": items.data or []}
 
 
 @router.patch("/items/{item_id}")
 async def toggle_grocery_item(item_id: str, user=Depends(get_current_user)):
     sb = get_supabase()
-    item = sb.table("grocery_items").select("in_pantry").eq("id", item_id).execute()
-    if item.data:
-        current = item.data[0]["in_pantry"] if isinstance(item.data, list) else item.data["in_pantry"]
-        sb.table("grocery_items").update({"in_pantry": not current}).eq("id", item_id).execute()
-        return {"in_pantry": not current}
-    return {"error": "Item not found"}
+    item = await sb.table("grocery_items").select("*, grocery_lists!inner(user_id)").eq("id", item_id).maybe_single().execute()
+    if not item.data:
+        raise HTTPException(status_code=404, detail="Item not found")
+    if item.data.get("grocery_lists", {}).get("user_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="Not your grocery item")
+    current = item.data["in_pantry"]
+    await sb.table("grocery_items").update({"in_pantry": not current}).eq("id", item_id).execute()
+    return {"in_pantry": not current}

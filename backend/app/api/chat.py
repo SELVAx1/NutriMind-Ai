@@ -24,7 +24,7 @@ async def send_message(req: ChatRequest, user=Depends(get_current_user)):
         if req.conversation_id:
             convo_id = req.conversation_id
         else:
-            convo = sb.table("conversations").insert({
+            convo = await sb.table("conversations").insert({
                 "user_id": user["id"],
                 "title": req.message[:50],
             }).execute()
@@ -34,7 +34,7 @@ async def send_message(req: ChatRequest, user=Depends(get_current_user)):
             else:
                 convo_id = data["id"]
 
-        sb.table("chat_messages").insert({
+        await sb.table("chat_messages").insert({
             "conversation_id": convo_id,
             "role": "user",
             "content": req.message,
@@ -42,7 +42,7 @@ async def send_message(req: ChatRequest, user=Depends(get_current_user)):
 
         result = await process_message(user["id"], req.message, convo_id)
 
-        sb.table("chat_messages").insert({
+        await sb.table("chat_messages").insert({
             "conversation_id": convo_id,
             "role": "assistant",
             "content": result["response"],
@@ -61,7 +61,7 @@ async def send_message(req: ChatRequest, user=Depends(get_current_user)):
     except Exception as e:
         logger.error("Chat error: %s\n%s", e, traceback.format_exc())
         return {
-            "response": f"Something went wrong: {str(e)}",
+            "response": "Something went wrong. Please try again.",
             "citations": [],
             "route_type": "error",
             "conversation_id": req.conversation_id,
@@ -69,15 +69,34 @@ async def send_message(req: ChatRequest, user=Depends(get_current_user)):
         }
 
 
+class AnalyzeRequest(BaseModel):
+    message: str
+
+
+@router.post("/analyze")
+async def analyze_only(req: AnalyzeRequest, user=Depends(get_current_user)):
+    """AI query that does NOT save to conversation history. For nutrition analysis widgets."""
+    try:
+        from app.ai.factory import generate_text
+        response = await generate_text(req.message, system="You are NutriMind AI, a nutrition analysis engine for Indian food. Respond concisely.")
+        return {"response": response}
+    except Exception as e:
+        logger.error("Analyze error: %s", e)
+        return {"response": "Analysis failed. Please try again."}
+
+
 @router.get("/history/{conversation_id}")
 async def get_history(conversation_id: str, user=Depends(get_current_user)):
     sb = get_supabase()
-    messages = sb.table("chat_messages").select("*").eq("conversation_id", conversation_id).order("created_at").execute()
+    convo = await sb.table("conversations").select("id").eq("id", conversation_id).eq("user_id", user["id"]).maybe_single().execute()
+    if not convo.data:
+        return {"messages": []}
+    messages = await sb.table("chat_messages").select("*").eq("conversation_id", conversation_id).order("created_at").execute()
     return {"messages": messages.data if messages.data else []}
 
 
 @router.get("/conversations")
 async def list_conversations(user=Depends(get_current_user)):
     sb = get_supabase()
-    convos = sb.table("conversations").select("*").eq("user_id", user["id"]).order("created_at", desc=True).limit(20).execute()
+    convos = await sb.table("conversations").select("*").eq("user_id", user["id"]).order("created_at", desc=True).limit(20).execute()
     return {"conversations": convos.data if convos.data else []}

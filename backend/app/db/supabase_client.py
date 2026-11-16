@@ -13,13 +13,14 @@ class SupabaseClient:
             "Content-Type": "application/json",
             "Prefer": "return=representation",
         }
+        self._http = httpx.AsyncClient(headers=self.headers, timeout=30)
 
     def table(self, name: str) -> "TableQuery":
         return TableQuery(self, name)
 
-    def rpc(self, function_name: str, params: dict) -> "RPCResult":
+    async def rpc(self, function_name: str, params: dict) -> "RPCResult":
         url = f"{self.base_url}/rest/v1/rpc/{function_name}"
-        resp = httpx.post(url, json=params, headers=self.headers, timeout=30)
+        resp = await self._http.post(url, json=params)
         resp.raise_for_status()
         return RPCResult(resp.json())
 
@@ -58,8 +59,42 @@ class TableQuery:
         self._params[column] = f"eq.{value}"
         return self
 
+    def neq(self, column: str, value) -> "TableQuery":
+        self._params[column] = f"neq.{value}"
+        return self
+
+    def gt(self, column: str, value) -> "TableQuery":
+        self._params[column] = f"gt.{value}"
+        return self
+
+    def gte(self, column: str, value) -> "TableQuery":
+        self._params[column] = f"gte.{value}"
+        return self
+
+    def lt(self, column: str, value) -> "TableQuery":
+        self._params[column] = f"lt.{value}"
+        return self
+
+    def lte(self, column: str, value) -> "TableQuery":
+        self._params[column] = f"lte.{value}"
+        return self
+
     def ilike(self, column: str, pattern: str) -> "TableQuery":
+        safe = pattern.replace("%", "*").replace("_", "*")
         self._params[column] = f"ilike.{pattern}"
+        return self
+
+    def in_(self, column: str, values: list) -> "TableQuery":
+        escaped = ",".join(str(v) for v in values)
+        self._params[column] = f"in.({escaped})"
+        return self
+
+    def is_(self, column: str, value) -> "TableQuery":
+        self._params[column] = f"is.{value}"
+        return self
+
+    def or_(self, filters: str) -> "TableQuery":
+        self._params["or"] = f"({filters})"
         return self
 
     def order(self, column: str, desc: bool = False) -> "TableQuery":
@@ -80,15 +115,16 @@ class TableQuery:
         self._headers["Accept"] = "application/vnd.pgrst.object+json"
         return self
 
-    def execute(self) -> "QueryResult":
+    async def execute(self) -> "QueryResult":
+        http = self._client._http
         if self._method == "GET":
-            resp = httpx.get(self._url, params=self._params, headers=self._headers, timeout=30)
+            resp = await http.get(self._url, params=self._params, headers=self._headers)
         elif self._method == "POST":
-            resp = httpx.post(self._url, json=self._body, params=self._params, headers=self._headers, timeout=30)
+            resp = await http.post(self._url, json=self._body, params=self._params, headers=self._headers)
         elif self._method == "PATCH":
-            resp = httpx.patch(self._url, json=self._body, params=self._params, headers=self._headers, timeout=30)
+            resp = await http.patch(self._url, json=self._body, params=self._params, headers=self._headers)
         elif self._method == "DELETE":
-            resp = httpx.delete(self._url, params=self._params, headers=self._headers, timeout=30)
+            resp = await http.delete(self._url, params=self._params, headers=self._headers)
         else:
             raise ValueError(f"Unknown method: {self._method}")
 
@@ -115,14 +151,7 @@ class RPCResult:
 
 class QueryResult:
     def __init__(self, data):
-        if data is None:
-            self.data = None
-        elif isinstance(data, list):
-            self.data = data
-        elif isinstance(data, dict):
-            self.data = data
-        else:
-            self.data = data
+        self.data = data
 
 
 _client: SupabaseClient | None = None

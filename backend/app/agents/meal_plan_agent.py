@@ -1,4 +1,5 @@
 import json
+import re
 from app.ai.factory import generate_text
 from app.services.food_service import get_common_foods, get_food_by_id
 from app.services.nutrition_engine import calculate_food_nutrition
@@ -29,18 +30,27 @@ Respond with ONLY valid JSON:
 }"""
 
 
+def extract_json(text: str) -> str:
+    cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    if "```json" in cleaned:
+        return cleaned.split("```json")[1].split("```")[0]
+    if "```" in cleaned:
+        return cleaned.split("```")[1].split("```")[0]
+    return cleaned
+
+
 async def generate_meal_plan(user_id: str, days: int = 1) -> dict:
     sb = get_supabase()
 
-    profile = sb.table("user_profiles").select("*").eq("user_id", user_id).execute()
-    profile_data = profile.data[0] if profile.data else {}
+    profile = await sb.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
+    profile_data = profile.data or {}
 
     targets = None
     if profile_data.get("id"):
-        t = sb.table("user_nutrition_targets").select("*").eq("profile_id", profile_data["id"]).execute()
-        targets = t.data[0] if t.data else None
+        t = await sb.table("user_nutrition_targets").select("*").eq("profile_id", profile_data["id"]).maybe_single().execute()
+        targets = t.data
 
-    foods = get_common_foods()
+    foods = await get_common_foods()
 
     food_list = []
     for f in foods:
@@ -74,17 +84,12 @@ Generate a balanced plan with 4 meals (breakfast, lunch, snack, dinner)."""
     try:
         response = await generate_text(prompt, system=PLAN_SYSTEM)
 
-        json_str = response
-        if "```json" in json_str:
-            json_str = json_str.split("```json")[1].split("```")[0]
-        elif "```" in json_str:
-            json_str = json_str.split("```")[1].split("```")[0]
-
+        json_str = extract_json(response)
         plan_data = json.loads(json_str.strip())
         meals = plan_data.get("meals", [])
 
         today = date.today()
-        plan = sb.table("meal_plans").insert({
+        plan = await sb.table("meal_plans").insert({
             "user_id": user_id,
             "start_date": today.isoformat(),
             "end_date": (today + timedelta(days=days - 1)).isoformat(),
@@ -97,7 +102,7 @@ Generate a balanced plan with 4 meals (breakfast, lunch, snack, dinner)."""
         total_nutrition = {"calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fibre": 0, "iron": 0}
 
         for meal in meals:
-            food = get_food_by_id(meal.get("food_id", ""))
+            food = await get_food_by_id(meal.get("food_id", ""))
             if not food:
                 continue
 
@@ -111,7 +116,7 @@ Generate a balanced plan with 4 meals (breakfast, lunch, snack, dinner)."""
             for k in total_nutrition:
                 total_nutrition[k] += nutrition.get(k, 0)
 
-            sb.table("meal_plan_items").insert({
+            await sb.table("meal_plan_items").insert({
                 "meal_plan_id": plan_id,
                 "food_item_id": food["id"],
                 "plan_date": today.isoformat(),

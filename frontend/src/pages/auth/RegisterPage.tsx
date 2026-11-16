@@ -1,110 +1,104 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { AuthLayout } from './AuthLayout'
-import { Card } from '@/components/ui/Card'
-import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Mail, Lock, User } from 'lucide-react'
 
 export function RegisterPage() {
+  const navigate = useNavigate()
+  const { signUp } = useAuth()
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
-  const { signUp } = useAuth()
+  const [error, setError] = useState('')
 
-  const handleSubmit = async (e: FormEvent) => {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    setError('')
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters')
-      return
-    }
-
     setLoading(true)
-    const { error } = await signUp(email, password)
-    setLoading(false)
-
-    if (error) {
-      setError(error)
-    } else {
-      setSuccess(true)
+    setError('')
+    try {
+      const res = await signUp(email, password)
+      if (res?.error) {
+        setError(res.error)
+        return
+      }
+      navigate('/onboarding')
+    } catch (err: any) {
+      setError(err?.message || 'Failed to create account')
+    } finally {
+      setLoading(false)
     }
-  }
-
-  if (success) {
-    return (
-      <AuthLayout>
-        <Card padding="lg" className="text-center">
-          <div className="text-4xl mb-4">✉️</div>
-          <h2 className="text-xl font-heading font-bold mb-2">Check your email</h2>
-          <p className="text-sm text-text-secondary mb-6">
-            We sent a confirmation link to <strong>{email}</strong>.
-            Click it to activate your account.
-          </p>
-          <Link to="/login" className="text-primary font-medium hover:underline text-sm">
-            Back to sign in
-          </Link>
-        </Card>
-      </AuthLayout>
-    )
   }
 
   return (
-    <AuthLayout>
-      <Card padding="lg">
-        <h2 className="text-xl font-heading font-bold mb-1">Create your account</h2>
-        <p className="text-sm text-text-secondary mb-6">Start your nutrition journey</p>
+    <div className="space-y-5">
+      <div>
+        <h2 className="login-title text-[30px] font-extrabold text-[#3B2A20] font-heading">Create Account</h2>
+        <p className="card-subtitle text-[12px] text-[#7B5E4A] mt-0.5">
+          Join NutriMind AI for personalized regional nutrition
+        </p>
+      </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            required
-          />
-          <Input
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 characters"
-            required
-          />
-          <Input
-            label="Confirm password"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Repeat your password"
-            required
-          />
+      {error && (
+        <div className="p-3 rounded-2xl bg-[#FDF0EE] border border-[#F3C3BC] text-[#8F3325] text-xs font-semibold">
+          {error}
+        </div>
+      )}
 
-          {error && (
-            <p className="text-sm text-danger bg-red-500/15 p-3 rounded-lg">{error}</p>
-          )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Full Name"
+          type="text"
+          required
+          placeholder="e.g. Kaniska Selvaraj"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          icon={<User className="w-4 h-4" />}
+        />
 
-          <Button type="submit" loading={loading} className="w-full">
-            Create account
-          </Button>
-        </form>
+        <Input
+          label="Email Address"
+          type="email"
+          required
+          placeholder="you@domain.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          icon={<Mail className="w-4 h-4" />}
+        />
 
-        <p className="text-sm text-text-secondary text-center mt-6">
+        <Input
+          label="Password"
+          type="password"
+          required
+          placeholder="Minimum 6 characters"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          icon={<Lock className="w-4 h-4" />}
+        />
+
+        <Button
+          type="submit"
+          variant="primary"
+          className="w-full justify-center"
+          loading={loading}
+        >
+          Start Free
+        </Button>
+      </form>
+
+      <div className="text-center pt-2 border-t border-[#D1B89A]/30">
+        <p className="card-subtitle text-[12px] text-[#7B5E4A]">
           Already have an account?{' '}
-          <Link to="/login" className="text-primary font-medium hover:underline">
+          <Link
+            to="/auth/login"
+            className="text-[#3B2A20] font-bold hover:underline"
+          >
             Sign in
           </Link>
         </p>
-      </Card>
-    </AuthLayout>
+      </div>
+    </div>
   )
 }

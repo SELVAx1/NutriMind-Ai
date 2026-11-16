@@ -8,9 +8,9 @@ const ACTIVITY_MULTIPLIERS: Record<string, number> = {
   very_active: 1.9,
 }
 
-export function calculateBMR(weightKg: number, heightCm: number, age: number): number {
-  // Mifflin-St Jeor (gender-neutral midpoint: averaging male +5 and female -161)
-  return 10 * weightKg + 6.25 * heightCm - 5 * age - 78
+export function calculateBMR(weightKg: number, heightCm: number, age: number, gender: string = 'male'): number {
+  const base = 10 * weightKg + 6.25 * heightCm - 5 * age
+  return gender === 'male' ? base + 5 : base - 161
 }
 
 export function calculateTDEE(bmr: number, activityLevel: string): number {
@@ -40,6 +40,24 @@ export function calculateMacroTargets(tdee: number, weightKg: number) {
   }
 }
 
+export function calculateICMRTargets({
+  age,
+  gender,
+  height_cm,
+  weight_kg,
+  activity_level,
+}: {
+  age: number
+  gender?: string | null
+  height_cm: number
+  weight_kg: number
+  activity_level: string
+}) {
+  const bmr = calculateBMR(weight_kg, height_cm, age, gender || 'male')
+  const tdee = calculateTDEE(bmr, activity_level)
+  return calculateMacroTargets(tdee, weight_kg)
+}
+
 export function calculateFoodNutrition(nv: NutritionalValues, quantityG: number): DailyNutrition {
   const factor = quantityG / 100
   return {
@@ -64,31 +82,35 @@ export function sumDailyNutrition(items: { nutrition: DailyNutrition }[]): Daily
       fibre: Math.round((acc.fibre + nutrition.fibre) * 10) / 10,
       iron: Math.round((acc.iron + nutrition.iron) * 10) / 10,
       calcium: Math.round((acc.calcium + nutrition.calcium) * 10) / 10,
-      vitamin_b12: Math.round((acc.vitamin_b12 + nutrition.vitamin_b12) * 100) / 100,
+      vitamin_b12: Math.round(((acc.vitamin_b12 || 0) + (nutrition.vitamin_b12 || 0)) * 100) / 100,
     }),
     { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, iron: 0, calcium: 0, vitamin_b12: 0 }
   )
 }
 
-export function calculateGaps(daily: DailyNutrition, targets: NutritionTargets): NutrientGap[] {
-  const gaps: NutrientGap[] = []
-
-  const checks: [string, number, number | null, string, string][] = [
-    ['Iron', daily.iron, targets.iron_mg, 'mg', 'var(--color-danger)'],
-    ['Vitamin B12', daily.vitamin_b12, targets.vitamin_b12_mcg, 'mcg', 'var(--color-warning)'],
-    ['Calcium', daily.calcium, targets.calcium_mg, 'mg', 'var(--color-protein)'],
-    ['Fibre', daily.fibre, targets.fibre_g, 'g', 'var(--color-fibre)'],
-    ['Protein', daily.protein, targets.protein_g, 'g', 'var(--color-protein)'],
+export function calculateGaps(actual: DailyNutrition, target: NutritionTargets | { calories: number; protein: number; carbs: number; fat: number; fibre: number; iron?: number; calcium?: number }): NutrientGap[] {
+  const t = target as any
+  const metrics: { key: keyof DailyNutrition; targetKey: string; name: string }[] = [
+    { key: 'calories', targetKey: 'calories_kcal', name: 'Calories' },
+    { key: 'protein', targetKey: 'protein_g', name: 'Protein' },
+    { key: 'carbs', targetKey: 'carbs_g', name: 'Carbs' },
+    { key: 'fat', targetKey: 'fat_g', name: 'Fat' },
+    { key: 'fibre', targetKey: 'fibre_g', name: 'Fibre' },
+    { key: 'iron', targetKey: 'iron_mg', name: 'Iron' },
+    { key: 'calcium', targetKey: 'calcium_mg', name: 'Calcium' },
   ]
 
-  for (const [nutrient, current, target, unit, color] of checks) {
-    if (target && target > 0) {
-      const pct = (current / target) * 100
-      if (pct < 80) {
-        gaps.push({ nutrient, current, target, unit, percentage: pct, color })
-      }
+  return metrics.map(({ key, targetKey, name }) => {
+    const act = (actual[key] as number) || 0
+    const tgt = (t[targetKey] || t[key.toLowerCase()] || 1) as number
+    const percentMet = Math.round((act / tgt) * 100)
+    return {
+      nutrient: name,
+      actual: act,
+      target: tgt,
+      gap: Math.max(0, tgt - act),
+      percentMet,
+      isDeficient: percentMet < 70,
     }
-  }
-
-  return gaps.sort((a, b) => a.percentage - b.percentage)
+  })
 }

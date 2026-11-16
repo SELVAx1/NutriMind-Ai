@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from app.middleware.supabase_auth import get_current_user
 from app.agents.meal_plan_agent import generate_meal_plan
@@ -59,7 +59,7 @@ async def rescue(req: RescueRequest, user=Depends(get_current_user)):
 async def list_plans(user=Depends(get_current_user)):
     from app.db.supabase_client import get_supabase
     sb = get_supabase()
-    plans = sb.table("meal_plans").select("*").eq("user_id", user["id"]).order("created_at", desc=True).limit(10).execute()
+    plans = await sb.table("meal_plans").select("*").eq("user_id", user["id"]).order("created_at", desc=True).limit(10).execute()
     return {"plans": plans.data or []}
 
 
@@ -67,5 +67,8 @@ async def list_plans(user=Depends(get_current_user)):
 async def get_plan(plan_id: str, user=Depends(get_current_user)):
     from app.db.supabase_client import get_supabase
     sb = get_supabase()
-    items = sb.table("meal_plan_items").select("*, food_items(*)").eq("meal_plan_id", plan_id).order("meal_type").execute()
+    plan = await sb.table("meal_plans").select("id").eq("id", plan_id).eq("user_id", user["id"]).maybe_single().execute()
+    if not plan.data:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    items = await sb.table("meal_plan_items").select("*, food_items(*)").eq("meal_plan_id", plan_id).order("meal_type").execute()
     return {"plan_id": plan_id, "items": items.data or []}

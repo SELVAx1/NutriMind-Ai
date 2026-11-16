@@ -20,7 +20,7 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]
 async def ingest_document(title: str, source: str, content: str, doc_type: str = "guideline", metadata: dict | None = None):
     sb = get_supabase()
 
-    doc = sb.table("knowledge_documents").insert({
+    doc = await sb.table("knowledge_documents").insert({
         "title": title,
         "source": source,
         "doc_type": doc_type,
@@ -31,7 +31,7 @@ async def ingest_document(title: str, source: str, content: str, doc_type: str =
 
     for i, chunk in enumerate(chunks):
         embedding = await embed_text(chunk)
-        sb.table("document_chunks").insert({
+        await sb.table("document_chunks").insert({
             "document_id": doc_id,
             "content": chunk,
             "embedding": embedding,

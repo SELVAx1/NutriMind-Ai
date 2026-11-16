@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from app.middleware.supabase_auth import get_current_user
 from app.db.supabase_client import get_supabase
@@ -18,9 +18,9 @@ async def get_weekly_summary(user=Depends(get_current_user)):
     today = date.today()
     week_ago = (today - timedelta(days=7)).isoformat()
 
-    logs = sb.table("food_logs").select(
+    logs = await sb.table("food_logs").select(
         "*, food_log_items(*, food_items(*, nutritional_values(*)))"
-    ).eq("user_id", user["id"]).order("log_date").execute()
+    ).eq("user_id", user["id"]).gte("log_date", week_ago).order("log_date").execute()
 
     daily_data = {}
     for log in (logs.data or []):
@@ -37,13 +37,13 @@ async def get_weekly_summary(user=Depends(get_current_user)):
                 daily_data[day]["vitamin_b12"] += n.get("vitamin_b12", 0)
                 daily_data[day]["meals"] += 1
 
-    profile = sb.table("user_profiles").select("*").eq("user_id", user["id"]).execute()
-    profile_data = profile.data[0] if profile.data else {}
+    profile = await sb.table("user_profiles").select("*").eq("user_id", user["id"]).maybe_single().execute()
+    profile_data = profile.data or {}
 
     targets = None
     if profile_data.get("id"):
-        t = sb.table("user_nutrition_targets").select("*").eq("profile_id", profile_data["id"]).execute()
-        targets = t.data[0] if t.data else None
+        t = await sb.table("user_nutrition_targets").select("*").eq("profile_id", profile_data["id"]).maybe_single().execute()
+        targets = t.data
 
     days_list = sorted(daily_data.items(), key=lambda x: x[0])
 
@@ -82,8 +82,8 @@ class WhatIfRequest(BaseModel):
 
 @router.post("/what-if")
 async def what_if_simulation(req: WhatIfRequest, user=Depends(get_current_user)):
-    original_matches = search_food(req.replace_food, limit=1)
-    replacement_matches = search_food(req.with_food, limit=1)
+    original_matches = await search_food(req.replace_food, limit=1)
+    replacement_matches = await search_food(req.with_food, limit=1)
 
     if not original_matches or not replacement_matches:
         return {"error": "Could not find one or both foods in the database."}

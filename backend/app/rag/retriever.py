@@ -9,7 +9,7 @@ async def retrieve_chunks(query: str, top_k: int = 5, threshold: float = 0.3) ->
     query_embedding = await embed_query(query)
     sb = get_supabase()
 
-    result = sb.rpc("match_documents", {
+    result = await sb.rpc("match_documents", {
         "query_embedding": query_embedding,
         "match_threshold": threshold,
         "match_count": top_k,

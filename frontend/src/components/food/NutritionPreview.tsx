@@ -1,31 +1,35 @@
-import { calculateFoodNutrition } from '@/lib/nutrition'
 import type { NutritionalValues } from '@/types/database'
-import { Card } from '@/components/ui/Card'
+import { calculateFoodNutrition } from '@/lib/nutrition'
 
-interface NutritionPreviewProps { nutritionalValues: NutritionalValues; quantityG: number }
-
-export function NutritionPreview({ nutritionalValues, quantityG }: NutritionPreviewProps) {
+export function NutritionPreview({
+  nutritionalValues,
+  quantityG,
+}: {
+  nutritionalValues: NutritionalValues
+  quantityG: number
+}) {
   const n = calculateFoodNutrition(nutritionalValues, quantityG)
+
   const items = [
-    { label: 'Calories', value: `${n.calories} kcal`, color: '#F59E0B' },
-    { label: 'Protein', value: `${n.protein} g`, color: '#8B5CF6' },
-    { label: 'Carbs', value: `${n.carbs} g`, color: '#3B82F6' },
-    { label: 'Fat', value: `${n.fat} g`, color: '#EF4444' },
-    { label: 'Fibre', value: `${n.fibre} g`, color: '#14B8A6' },
-    { label: 'Iron', value: `${n.iron} mg`, color: '#F97316' },
+    { label: 'Calories', val: `${n.calories} kcal`, color: 'text-[#3B2A20] bg-[#FAF7F0] border-[#D1B89A]' },
+    { label: 'Protein', val: `${n.protein}g`, color: 'text-[#7B5E4A] bg-[#F2E7D5] border-[#D1B89A]' },
+    { label: 'Carbs', val: `${n.carbs}g`, color: 'text-[#3B2A20] bg-[#FAF7F0] border-[#D1B89A]' },
+    { label: 'Fat', val: `${n.fat}g`, color: 'text-[#A67C52] bg-[#FAF7F0] border-[#D1B89A]' },
+    { label: 'Fibre', val: `${n.fibre}g`, color: 'text-[#7B5E4A] bg-[#F2E7D5] border-[#D1B89A]' },
+    { label: 'Iron (Fe)', val: `${n.iron}mg`, color: 'text-[#3B2A20] bg-[#FAF7F0] border-[#D1B89A]' },
   ]
 
   return (
-    <Card padding="sm" className="bg-surface-2">
-      <p className="text-[11px] text-text-muted mb-2.5 font-medium">Nutrition for {quantityG}g</p>
-      <div className="grid grid-cols-3 gap-3">
-        {items.map(({ label, value, color }) => (
-          <div key={label} className="text-center">
-            <div className="text-[13px] font-bold tabular-nums" style={{ color }}>{value}</div>
-            <div className="text-[10px] text-text-dim">{label}</div>
-          </div>
-        ))}
-      </div>
-    </Card>
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 my-3">
+      {items.map(item => (
+        <div
+          key={item.label}
+          className={`p-3 rounded-2xl border flex flex-col items-center justify-center text-center ${item.color}`}
+        >
+          <span className="eyebrow-label text-[10px] font-bold uppercase tracking-wider">{item.label}</span>
+          <span className="stat-small text-[18px] font-bold font-heading mt-0.5">{item.val}</span>
+        </div>
+      ))}
+    </div>
   )
 }

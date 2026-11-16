@@ -1,4 +1,3 @@
-import base64
 import google.generativeai as genai
 from app.ai.provider import LLMProvider
 from app.config import get_settings
@@ -15,7 +14,7 @@ class GoogleProvider(LLMProvider):
     async def generate(self, prompt: str, system: str = "", model: str | None = None) -> str:
         model_name = model or self.default_model
         gm = genai.GenerativeModel(model_name, system_instruction=system or None)
-        response = gm.generate_content(prompt)
+        response = await gm.generate_content_async(prompt)
         return response.text or ""
 
     async def vision(self, image_bytes: bytes, prompt: str, model: str | None = None) -> str:
@@ -27,12 +26,12 @@ class GoogleProvider(LLMProvider):
             "data": image_bytes,
         }
 
-        response = gm.generate_content([prompt, image_part])
+        response = await gm.generate_content_async([prompt, image_part])
         return response.text or ""
 
     async def embed(self, text: str, model: str | None = None) -> list[float]:
         model_name = model or self.embedding_model
-        result = genai.embed_content(
+        result = await genai.embed_content_async(
             model=f"models/{model_name}",
             content=text,
             task_type="retrieval_document",
@@ -41,7 +40,7 @@ class GoogleProvider(LLMProvider):
         return result["embedding"]
 
     async def embed_query(self, text: str) -> list[float]:
-        result = genai.embed_content(
+        result = await genai.embed_content_async(
             model=f"models/{self.embedding_model}",
             content=text,
             task_type="retrieval_query",

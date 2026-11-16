@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from app.middleware.supabase_auth import get_current_user
 from app.db.supabase_client import get_supabase
@@ -10,6 +10,7 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 class ProfileCreate(BaseModel):
     full_name: str | None = None
     age: int | None = None
+    gender: str | None = None
     height_cm: float | None = None
     weight_kg: float | None = None
     activity_level: str | None = None
@@ -22,12 +23,12 @@ class ProfileCreate(BaseModel):
 @router.get("/profile")
 async def get_profile(user=Depends(get_current_user)):
     sb = get_supabase()
-    profile = sb.table("user_profiles").select("*").eq("user_id", user["id"]).maybe_single().execute()
+    profile = await sb.table("user_profiles").select("*").eq("user_id", user["id"]).maybe_single().execute()
 
     if not profile.data:
         return {"profile": None, "targets": None}
 
-    targets = sb.table("user_nutrition_targets").select("*").eq("profile_id", profile.data["id"]).maybe_single().execute()
+    targets = await sb.table("user_nutrition_targets").select("*").eq("profile_id", profile.data["id"]).maybe_single().execute()
 
     return {"profile": profile.data, "targets": targets.data}
 
@@ -36,29 +37,41 @@ async def get_profile(user=Depends(get_current_user)):
 async def create_or_update_profile(req: ProfileCreate, user=Depends(get_current_user)):
     sb = get_supabase()
 
-    existing = sb.table("user_profiles").select("id").eq("user_id", user["id"]).maybe_single().execute()
+    existing = await sb.table("user_profiles").select("*").eq("user_id", user["id"]).maybe_single().execute()
 
     profile_data = req.model_dump(exclude_none=True)
     profile_data["user_id"] = user["id"]
 
     if existing.data:
-        result = sb.table("user_profiles").update(profile_data).eq("id", existing.data["id"]).execute()
-        profile = result.data[0]
+        result = await sb.table("user_profiles").update(profile_data).eq("id", existing.data["id"]).execute()
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to update profile")
+        profile = result.data[0] if isinstance(result.data, list) else result.data
+        merged = {**existing.data, **profile}
     else:
-        result = sb.table("user_profiles").insert(profile_data).execute()
-        profile = result.data[0]
+        result = await sb.table("user_profiles").insert(profile_data).execute()
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to create profile")
+        profile = result.data[0] if isinstance(result.data, list) else result.data
+        merged = profile
 
-    if req.weight_kg and req.height_cm and req.age and req.activity_level:
-        bmr = calculate_bmr(req.weight_kg, req.height_cm, req.age)
-        tdee = calculate_tdee(bmr, req.activity_level)
-        targets = calculate_macro_targets(tdee, req.weight_kg)
+    weight = merged.get("weight_kg")
+    height = merged.get("height_cm")
+    age = merged.get("age")
+    activity = merged.get("activity_level")
+    gender = merged.get("gender", "male")
+
+    if weight and height and age and activity:
+        bmr = calculate_bmr(weight, height, age, gender)
+        tdee = calculate_tdee(bmr, activity)
+        targets = calculate_macro_targets(tdee, weight)
         targets["profile_id"] = profile["id"]
 
-        existing_targets = sb.table("user_nutrition_targets").select("id").eq("profile_id", profile["id"]).maybe_single().execute()
+        existing_targets = await sb.table("user_nutrition_targets").select("id").eq("profile_id", profile["id"]).maybe_single().execute()
 
         if existing_targets.data:
-            sb.table("user_nutrition_targets").update(targets).eq("id", existing_targets.data["id"]).execute()
+            await sb.table("user_nutrition_targets").update(targets).eq("id", existing_targets.data["id"]).execute()
         else:
-            sb.table("user_nutrition_targets").insert(targets).execute()
+            await sb.table("user_nutrition_targets").insert(targets).execute()
 
     return {"profile": profile, "message": "Profile saved"}

@@ -1,9 +1,10 @@
+import json
+import re
+from datetime import date
 from app.ai.factory import generate_text
 from app.services.food_service import search_food, get_common_foods
 from app.services.nutrition_engine import calculate_food_nutrition
 from app.db.supabase_client import get_supabase
-from datetime import date
-import json
 import logging
 
 logger = logging.getLogger("nutrimind.rescue")
@@ -12,16 +13,16 @@ logger = logging.getLogger("nutrimind.rescue")
 async def rescue_meal(user_id: str, actual_food_name: str, meal_type: str = "lunch") -> dict:
     sb = get_supabase()
 
-    profile = sb.table("user_profiles").select("*").eq("user_id", user_id).execute()
-    profile_data = profile.data[0] if profile.data else {}
+    profile = await sb.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
+    profile_data = profile.data or {}
 
     targets = None
     if profile_data.get("id"):
-        t = sb.table("user_nutrition_targets").select("*").eq("profile_id", profile_data["id"]).execute()
-        targets = t.data[0] if t.data else None
+        t = await sb.table("user_nutrition_targets").select("*").eq("profile_id", profile_data["id"]).maybe_single().execute()
+        targets = t.data
 
     today = date.today().isoformat()
-    logs = sb.table("food_logs").select("*, food_log_items(*, food_items(*, nutritional_values(*)))").eq("user_id", user_id).eq("log_date", today).execute()
+    logs = await sb.table("food_logs").select("*, food_log_items(*, food_items(*, nutritional_values(*)))").eq("user_id", user_id).eq("log_date", today).execute()
 
     consumed = {"calories": 0, "protein": 0, "carbs": 0, "fat": 0, "iron": 0}
     for log in (logs.data or []):
@@ -32,7 +33,7 @@ async def rescue_meal(user_id: str, actual_food_name: str, meal_type: str = "lun
                 for k in consumed:
                     consumed[k] += n.get(k, 0)
 
-    actual_matches = search_food(actual_food_name, limit=1)
+    actual_matches = await search_food(actual_food_name, limit=1)
     actual_food = actual_matches[0] if actual_matches else None
     actual_nutrition = {}
     if actual_food and actual_food.get("nutritional_values"):
@@ -45,7 +46,7 @@ async def rescue_meal(user_id: str, actual_food_name: str, meal_type: str = "lun
             "protein": max(0, (targets.get("protein_g", 60)) - consumed["protein"] - actual_nutrition.get("protein", 0)),
         }
 
-    common_foods = get_common_foods()
+    common_foods = await get_common_foods()
     food_options = [{"name": f["name"], "id": f["id"]} for f in common_foods[:20]]
 
     prompt = f"""The user was supposed to eat a planned meal for {meal_type}, but ate "{actual_food_name}" instead.
@@ -63,16 +64,16 @@ Respond as JSON:
 
     try:
         resp = await generate_text(prompt, system="You are NutriRescue, a meal recovery agent. Help users recover from meal deviations with practical suggestions.")
-        json_str = resp
-        if "```json" in json_str:
-            json_str = json_str.split("```json")[1].split("```")[0]
-        elif "```" in json_str:
-            json_str = json_str.split("```")[1].split("```")[0]
+        cleaned = re.sub(r'<think>.*?</think>', '', resp, flags=re.DOTALL)
+        if "```json" in cleaned:
+            cleaned = cleaned.split("```json")[1].split("```")[0]
+        elif "```" in cleaned:
+            cleaned = cleaned.split("```")[1].split("```")[0]
 
-        result = json.loads(json_str.strip())
+        result = json.loads(cleaned.strip())
 
         revised = result.get("revised_meal", {})
-        revised_food = search_food(revised.get("food_name", ""), limit=1)
+        revised_food = await search_food(revised.get("food_name", ""), limit=1)
         revised_nutrition = {}
         if revised_food and revised_food[0].get("nutritional_values"):
             revised_nutrition = calculate_food_nutrition(revised_food[0]["nutritional_values"], revised.get("quantity_g", 200))

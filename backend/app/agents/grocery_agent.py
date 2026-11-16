@@ -7,14 +7,22 @@ logger = logging.getLogger("nutrimind.grocery")
 CATEGORY_MAP = {
     "staple": "Grains & Staples",
     "rice": "Grains & Staples",
+    "millet": "Grains & Staples",
     "breakfast": "Breakfast Items",
     "curry": "Dal & Curries",
+    "lentil": "Dal & Curries",
+    "dal": "Dal & Curries",
     "side": "Vegetables & Sides",
+    "vegetable": "Vegetables & Sides",
     "snack": "Snacks & Protein",
     "protein": "Snacks & Protein",
+    "egg": "Snacks & Protein",
+    "fish": "Snacks & Protein",
+    "meat": "Snacks & Protein",
     "dairy": "Dairy",
     "fruit": "Fruits",
     "condiment": "Condiments & Spices",
+    "spice": "Condiments & Spices",
     "beverage": "Beverages",
     "soup": "Dal & Curries",
 }
@@ -24,13 +32,13 @@ async def generate_grocery_list(user_id: str, plan_id: str | None = None) -> dic
     sb = get_supabase()
 
     if plan_id:
-        items_result = sb.table("meal_plan_items").select("*, food_items(*)").eq("meal_plan_id", plan_id).execute()
+        items_result = await sb.table("meal_plan_items").select("*, food_items(*)").eq("meal_plan_id", plan_id).execute()
     else:
-        plans = sb.table("meal_plans").select("id").eq("user_id", user_id).eq("status", "active").order("created_at", desc=True).limit(1).execute()
+        plans = await sb.table("meal_plans").select("id").eq("user_id", user_id).eq("status", "active").order("created_at", desc=True).limit(1).execute()
         if not plans.data:
             return {"error": "No active meal plan found", "items": [], "total_cost": 0}
         plan_id = plans.data[0]["id"]
-        items_result = sb.table("meal_plan_items").select("*, food_items(*)").eq("meal_plan_id", plan_id).execute()
+        items_result = await sb.table("meal_plan_items").select("*, food_items(*)").eq("meal_plan_id", plan_id).execute()
 
     if not items_result.data:
         return {"error": "No items in meal plan", "items": [], "total_cost": 0}
@@ -61,7 +69,7 @@ async def generate_grocery_list(user_id: str, plan_id: str | None = None) -> dic
     grocery_items = sorted(aggregated.values(), key=lambda x: x["category"])
     total_cost = sum(item["estimated_cost"] for item in grocery_items)
 
-    grocery_list = sb.table("grocery_lists").insert({
+    grocery_list = await sb.table("grocery_lists").insert({
         "meal_plan_id": plan_id,
         "user_id": user_id,
         "total_estimated_cost": total_cost,
@@ -70,7 +78,7 @@ async def generate_grocery_list(user_id: str, plan_id: str | None = None) -> dic
     list_id = grocery_list.data[0]["id"] if isinstance(grocery_list.data, list) else grocery_list.data["id"]
 
     for item in grocery_items:
-        sb.table("grocery_items").insert({
+        await sb.table("grocery_items").insert({
             "grocery_list_id": list_id,
             "ingredient_name": item["ingredient_name"],
             "quantity": item["quantity_g"],

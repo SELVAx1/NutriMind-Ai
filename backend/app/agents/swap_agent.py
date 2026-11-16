@@ -1,34 +1,51 @@
 import json
+import re
 from app.ai.factory import generate_text
-from app.services.food_service import get_food_by_id, search_food, get_common_foods
+from app.services.food_service import get_food_by_id, get_common_foods
 from app.services.nutrition_engine import calculate_food_nutrition
 from app.db.supabase_client import get_supabase
 import logging
 
 logger = logging.getLogger("nutrimind.swap")
 
+NON_VEG_KEYWORDS = {"egg", "chicken", "mutton", "fish", "prawn", "shrimp", "meat", "pork", "beef", "lamb"}
+DAIRY_KEYWORDS = {"milk", "paneer", "curd", "ghee", "butter", "cheese", "cream", "dahi"}
+ROOT_VEG_KEYWORDS = {"potato", "onion", "garlic", "carrot", "beetroot", "radish", "turnip"}
+
+
+def is_compatible(food_name: str, diet_type: str) -> bool:
+    name_lower = food_name.lower()
+    if diet_type == "veg":
+        return not any(kw in name_lower for kw in NON_VEG_KEYWORDS)
+    if diet_type == "vegan":
+        return not any(kw in name_lower for kw in NON_VEG_KEYWORDS | DAIRY_KEYWORDS)
+    if diet_type == "eggetarian":
+        blocked = NON_VEG_KEYWORDS - {"egg"}
+        return not any(kw in name_lower for kw in blocked)
+    if diet_type == "jain":
+        return not any(kw in name_lower for kw in NON_VEG_KEYWORDS | ROOT_VEG_KEYWORDS)
+    return True
+
 
 async def find_alternatives(user_id: str, food_item_id: str, quantity_g: float = 150) -> dict:
     sb = get_supabase()
 
-    original = get_food_by_id(food_item_id)
+    original = await get_food_by_id(food_item_id)
     if not original:
         return {"error": "Food item not found", "alternatives": []}
 
-    profile = sb.table("user_profiles").select("*").eq("user_id", user_id).execute()
-    profile_data = profile.data[0] if profile.data else {}
+    profile = await sb.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
+    profile_data = profile.data or {}
+    diet_type = profile_data.get("diet_type", "veg")
 
     original_nv = original.get("nutritional_values", {})
     original_nutrition = calculate_food_nutrition(original_nv, quantity_g) if original_nv else {}
 
-    all_foods = get_common_foods()
+    all_foods = await get_common_foods()
     candidates = [
         f for f in all_foods
-        if f["id"] != food_item_id and f.get("nutritional_values")
+        if f["id"] != food_item_id and f.get("nutritional_values") and is_compatible(f.get("name", ""), diet_type)
     ]
-
-    if profile_data.get("diet_type") == "veg":
-        candidates = [f for f in candidates if f.get("category") != "protein" or f.get("name") != "Egg (boiled)"]
 
     scored = []
     for f in candidates:
@@ -50,7 +67,7 @@ async def find_alternatives(user_id: str, food_item_id: str, quantity_g: float =
 
     prompt = f"""The user wants to swap "{original['name']}" ({quantity_g}g, {original_nutrition.get('calories',0)} kcal, {original_nutrition.get('protein',0)}g protein).
 
-Their diet: {profile_data.get('diet_type', 'veg')}, budget: ₹{profile_data.get('budget_daily', 200)}/day.
+Their diet: {diet_type}, budget: ₹{profile_data.get('budget_daily', 200)}/day.
 
 Top alternatives:{alternatives_text}
 
@@ -61,11 +78,12 @@ Respond as JSON: {{"explanations": ["reason 1", "reason 2", "reason 3"]}}"""
     try:
         resp = await generate_text(prompt)
         json_str = resp
-        if "```json" in json_str:
-            json_str = json_str.split("```json")[1].split("```")[0]
-        elif "```" in json_str:
-            json_str = json_str.split("```")[1].split("```")[0]
-        parsed = json.loads(json_str.strip())
+        cleaned = re.sub(r'<think>.*?</think>', '', json_str, flags=re.DOTALL)
+        if "```json" in cleaned:
+            cleaned = cleaned.split("```json")[1].split("```")[0]
+        elif "```" in cleaned:
+            cleaned = cleaned.split("```")[1].split("```")[0]
+        parsed = json.loads(cleaned.strip())
         explanations = parsed.get("explanations", explanations)
     except Exception as e:
         logger.warning("Swap explanation generation failed: %s", e)

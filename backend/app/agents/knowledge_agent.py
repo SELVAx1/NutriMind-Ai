@@ -9,7 +9,7 @@ logger = logging.getLogger("nutrimind.knowledge_agent")
 
 async def handle_rag_query(user_id: str, query: str) -> dict:
     sb = get_supabase()
-    profile = sb.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
+    profile = await sb.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
 
     chunks = await retrieve_chunks(query, top_k=5)
 

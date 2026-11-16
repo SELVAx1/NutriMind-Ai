@@ -1,3 +1,4 @@
+from datetime import date
 from app.ai.factory import generate_text
 from app.agents.knowledge_agent import handle_rag_query
 from app.middleware.safety import check_safety
@@ -56,14 +57,14 @@ async def process_message(user_id: str, message: str, conversation_id: str | Non
 async def handle_personal_query(user_id: str, message: str) -> dict:
     sb = get_supabase()
 
-    profile = sb.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
+    profile = await sb.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
     targets = None
     if profile.data:
-        t = sb.table("user_nutrition_targets").select("*").eq("profile_id", profile.data["id"]).maybe_single().execute()
+        t = await sb.table("user_nutrition_targets").select("*").eq("profile_id", profile.data["id"]).maybe_single().execute()
         targets = t.data
 
-    today = __import__("datetime").date.today().isoformat()
-    logs = sb.table("food_logs").select("*, food_log_items(*, food_items(*, nutritional_values(*)))").eq("user_id", user_id).eq("log_date", today).execute()
+    today = date.today().isoformat()
+    logs = await sb.table("food_logs").select("*, food_log_items(*, food_items(*, nutritional_values(*)))").eq("user_id", user_id).eq("log_date", today).execute()
 
     meals_today = []
     daily_nutrition = {"calories": 0, "protein": 0, "carbs": 0, "fat": 0, "iron": 0}
@@ -95,18 +96,29 @@ async def handle_personal_query(user_id: str, message: str) -> dict:
 
 
 async def handle_action(user_id: str, message: str) -> dict:
-    lower = message.lower()
+    action_prompt = f"""Classify this action request into one category. Respond with ONLY the category:
+- "rescue" — user ate something different from plan, deviated, had unplanned food
+- "plan" — user wants meal suggestions, a plan, recommendations for what to eat
+- "swap" — user wants to replace or swap a specific food
+- "other" — anything else
 
-    if any(w in lower for w in ["ate", "had", "eaten", "instead", "deviated", "skipped", "biryani", "outside"]):
+Message: {message}"""
+
+    try:
+        action_type = await generate_text(action_prompt, system="Respond with only the category name.", fast=True)
+        action_type = action_type.strip().lower().strip('"').strip("'")
+    except Exception:
+        action_type = "other"
+
+    if action_type == "rescue":
         from app.agents.rescue_agent import rescue_meal
-        food_name = message.split("ate")[-1].strip().split("instead")[0].strip().strip('"').strip("'") if "ate" in lower else message
-        result = await rescue_meal(user_id, food_name)
+        result = await rescue_meal(user_id, message)
         summary = result.get("summary", "Recovery plan generated.")
         revised = result.get("revised_dinner", {})
         response = f"{summary}\n\nSuggested dinner: {revised.get('food_name', 'a balanced meal')} ({revised.get('quantity_g', 200)}g)\n{revised.get('explanation', '')}"
         return {"response": response, "citations": [], "route_type": "action"}
 
-    if any(w in lower for w in ["plan", "suggest", "recommend", "meal plan", "what should i eat"]):
+    if action_type == "plan":
         from app.agents.meal_plan_agent import generate_meal_plan
         result = await generate_meal_plan(user_id, days=1)
         if result.get("meals"):
@@ -119,7 +131,7 @@ async def handle_action(user_id: str, message: str) -> dict:
             response = "I couldn't generate a plan right now. Try again or check your profile settings."
         return {"response": response, "citations": [], "route_type": "action"}
 
-    if any(w in lower for w in ["swap", "replace", "alternative", "instead of"]):
+    if action_type == "swap":
         response = "To swap a food, go to the Meal Planner page and click the 'Swap' button on any meal. I'll find alternatives that match your diet and budget."
         return {"response": response, "citations": [], "route_type": "action"}
 

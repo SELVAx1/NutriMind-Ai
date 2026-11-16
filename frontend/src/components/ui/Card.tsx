@@ -1,41 +1,48 @@
-import { clsx } from 'clsx'
-import type { HTMLAttributes, ReactNode } from 'react'
+import type { ReactNode, HTMLAttributes } from 'react'
+import clsx from 'clsx'
 
-interface CardProps extends HTMLAttributes<HTMLDivElement> {
+export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode
+  className?: string
   padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl'
+  variant?: 'default' | 'flat' | 'outline' | 'interactive'
   hover?: boolean
-  glow?: string
 }
 
-export function Card({ children, padding = 'md', hover, glow, className, ...props }: CardProps) {
+export function Card({
+  children,
+  className,
+  padding = 'md',
+  variant = 'default',
+  hover = false,
+  ...props
+}: CardProps) {
+  const paddingStyles = {
+    none: 'p-0',
+    sm: 'p-3 sm:p-4',
+    md: 'p-4 sm:p-5 md:p-6',
+    lg: 'p-5 sm:p-6 md:p-8',
+    xl: 'p-6 sm:p-8 md:p-10',
+  }
+
+  const variantStyles = {
+    default: 'bg-white border border-[#D1B89A]/60 rounded-3xl shadow-[0_4px_20px_rgba(59,42,32,0.04)]',
+    flat: 'bg-[#FAF7F0] border border-[#D1B89A]/50 rounded-3xl',
+    outline: 'bg-transparent border border-[#D1B89A] rounded-3xl',
+    interactive: 'bg-white border border-[#D1B89A]/60 rounded-3xl shadow-sm hover:border-[#7B5E4A] hover:shadow-[0_10px_24px_rgba(59,42,32,0.08)] transition-all cursor-pointer',
+  }
+
   return (
     <div
       className={clsx(
-        'rounded-xl border border-border bg-surface-1',
-        'shadow-[0_2px_8px_rgba(0,0,0,0.4),0_0px_1px_rgba(0,0,0,0.3)]',
-        hover && 'hover:border-text-dim/60 hover:shadow-[0_4px_16px_rgba(0,0,0,0.5)] transition-all duration-200',
-        {
-          '': padding === 'none',
-          'p-4': padding === 'sm',
-          'p-5': padding === 'md',
-          'p-6 lg:p-7': padding === 'lg',
-          'p-7 lg:p-8': padding === 'xl',
-        },
+        variantStyles[variant],
+        paddingStyles[padding],
+        hover && 'hover-lift',
         className
       )}
-      style={glow ? { boxShadow: `0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px ${glow}20, 0 0 24px ${glow}10` } : undefined}
       {...props}
     >
       {children}
     </div>
   )
-}
-
-export function CardHeader({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={clsx('mb-5', className)} {...props}>{children}</div>
-}
-
-export function CardContent({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={clsx(className)} {...props}>{children}</div>
 }

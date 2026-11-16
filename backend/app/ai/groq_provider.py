@@ -1,4 +1,4 @@
-from groq import Groq
+from groq import AsyncGroq
 from app.ai.provider import LLMProvider
 from app.config import get_settings
 
@@ -7,7 +7,7 @@ class GroqProvider(LLMProvider):
 
     def __init__(self):
         settings = get_settings()
-        self.client = Groq(api_key=settings.groq_api_key)
+        self.client = AsyncGroq(api_key=settings.groq_api_key)
         self.default_model = settings.groq_model_default
         self.fast_model = settings.groq_model_fast
 
@@ -17,7 +17,7 @@ class GroqProvider(LLMProvider):
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
 
-        response = self.client.chat.completions.create(
+        response = await self.client.chat.completions.create(
             model=model or self.default_model,
             messages=messages,
             temperature=0.7,

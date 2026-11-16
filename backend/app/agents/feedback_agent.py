@@ -26,7 +26,7 @@ async def process_feedback(user_id: str, feedback_text: str, target_type: str = 
     except Exception:
         category = "general"
 
-    sb.table("user_feedback").insert({
+    await sb.table("user_feedback").insert({
         "user_id": user_id,
         "target_type": target_type,
         "target_id": target_id,
@@ -34,8 +34,8 @@ async def process_feedback(user_id: str, feedback_text: str, target_type: str = 
         "feedback_category": category,
     }).execute()
 
-    profile = sb.table("user_profiles").select("*").eq("user_id", user_id).execute()
-    profile_data = profile.data[0] if profile.data else None
+    profile = await sb.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
+    profile_data = profile.data
 
     preference_update = None
     if profile_data:
@@ -44,11 +44,11 @@ async def process_feedback(user_id: str, feedback_text: str, target_type: str = 
         if category == "time":
             current_time = profile_data.get("max_cooking_min", 30)
             new_time = max(10, current_time - 5)
-            sb.table("user_profiles").update({"max_cooking_min": new_time}).eq("id", profile_id).execute()
+            await sb.table("user_profiles").update({"max_cooking_min": new_time}).eq("id", profile_id).execute()
             preference_update = f"Reduced max cooking time to {new_time} minutes"
 
         elif category == "budget":
-            sb.table("dietary_preferences").insert({
+            await sb.table("dietary_preferences").insert({
                 "profile_id": profile_id,
                 "preference_key": "budget_priority",
                 "preference_value": "high",
@@ -56,7 +56,7 @@ async def process_feedback(user_id: str, feedback_text: str, target_type: str = 
             preference_update = "Prioritizing budget-friendly options"
 
         elif category == "taste":
-            sb.table("dietary_preferences").insert({
+            await sb.table("dietary_preferences").insert({
                 "profile_id": profile_id,
                 "preference_key": "disliked_food",
                 "preference_value": feedback_text[:100],

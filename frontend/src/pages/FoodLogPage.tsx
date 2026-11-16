@@ -1,29 +1,21 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { FoodSearch } from '@/components/food/FoodSearch'
 import { NutritionPreview } from '@/components/food/NutritionPreview'
 import { useTodaysLogs } from '@/hooks/useFoodLog'
 import type { FoodItem } from '@/types/database'
-import { clsx } from 'clsx'
-import { Check } from 'lucide-react'
+import { Check, Utensils, Scale, ArrowLeft, Camera } from 'lucide-react'
 
 const MEAL_TYPES = [
   { value: 'breakfast', label: 'Breakfast', emoji: '🌅' },
   { value: 'lunch', label: 'Lunch', emoji: '☀️' },
   { value: 'dinner', label: 'Dinner', emoji: '🌙' },
-  { value: 'snack', label: 'Snack', emoji: '🍪' },
+  { value: 'snack', label: 'Snack & Tea', emoji: '🍪' },
 ]
 
-const PORTION_PRESETS = [
-  { label: '50g', value: 50 },
-  { label: '100g', value: 100 },
-  { label: '150g', value: 150 },
-  { label: '200g', value: 200 },
-  { label: '250g', value: 250 },
-  { label: '300g', value: 300 },
-]
+const PORTION_PRESETS = [50, 100, 150, 200, 250, 300]
 
 export function FoodLogPage() {
   const navigate = useNavigate()
@@ -44,7 +36,7 @@ export function FoodLogPage() {
     try {
       await logFood(mealType, selectedFood.id, quantity)
       setSuccess(true)
-      setTimeout(() => navigate('/dashboard'), 1500)
+      setTimeout(() => navigate('/dashboard'), 1000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to log food')
     } finally {
@@ -54,108 +46,161 @@ export function FoodLogPage() {
 
   if (success) {
     return (
-      <div className="py-12 text-center">
-        <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
-          <Check size={32} className="text-success" />
+      <div className="py-20 text-center animate-fade-in max-w-md mx-auto">
+        <div className="w-16 h-16 rounded-3xl bg-[#F2E7D5] border border-[#D1B89A] flex items-center justify-center mx-auto mb-4 text-[#7B5E4A]">
+          <Check size={36} strokeWidth={3} />
         </div>
-        <h2 className="text-xl font-heading font-bold mb-1">Meal logged!</h2>
-        <p className="text-sm text-text-secondary">
-          {selectedFood?.name} — {quantity}g added to {mealType}
+        <h2 className="page-title text-[28px] font-extrabold text-[#3B2A20] mb-1 font-heading">Meal Logged!</h2>
+        <p className="card-subtitle text-[14px] text-[#7B5E4A]">
+          <span className="font-bold text-[#3B2A20]">{selectedFood?.name}</span> ({quantity}g) recorded into your food diary.
         </p>
       </div>
     )
   }
 
   return (
-    <div className="py-6 max-w-xl mx-auto">
-      <h1 className="text-xl font-heading font-bold mb-1">Log a meal</h1>
-      <p className="text-sm text-text-secondary mb-6">Search for food, set the quantity, and log it.</p>
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">Meal type</label>
-          <div className="grid grid-cols-4 gap-2">
-            {MEAL_TYPES.map(({ value, label, emoji }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setMealType(value)}
-                className={clsx(
-                  'flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors cursor-pointer',
-                  mealType === value
-                    ? 'bg-primary text-white border-primary'
-                    : 'border-border text-text-secondary hover:bg-surface-2'
-                )}
-              >
-                <span className="text-lg">{emoji}</span>
-                {label}
-              </button>
-            ))}
+    <div className="max-w-2xl mx-auto flex flex-col gap-6 animate-fade-in pb-12">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-3 border-b border-[#D1B89A]/40">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/dashboard"
+            className="p-2.5 rounded-2xl bg-[#FAF7F0] border border-[#D1B89A] hover:bg-[#F2E7D5] text-[#7B5E4A] hover:text-[#3B2A20] transition-colors"
+          >
+            <ArrowLeft size={16} />
+          </Link>
+          <div>
+            <h1 className="page-title text-[28px] font-extrabold text-[#3B2A20] font-heading">Record Food Intake</h1>
+            <p className="card-subtitle text-[11.5px] text-[#7B5E4A]">Select meal type and portion from the verified IFCT Indian database</p>
           </div>
         </div>
+        <Link to="/food/analyze">
+          <Button variant="secondary" size="sm">
+            <Camera size={14} className="text-[#7B5E4A]" /> Scan Photo
+          </Button>
+        </Link>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">What did you eat?</label>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        {/* Meal Type Selector */}
+        <Card padding="md" className="bg-white border-[#D1B89A]/60">
+          <label className="eyebrow-label block text-[10px] font-bold uppercase tracking-wider text-[#7B5E4A] mb-3">
+            Select Meal
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {MEAL_TYPES.map(({ value, label, emoji }) => {
+              const active = mealType === value
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setMealType(value)}
+                  className={`flex items-center gap-2.5 p-3 rounded-2xl border text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                    active
+                      ? 'bg-[#7B5E4A] text-white border-[#7B5E4A] shadow-md shadow-[#7B5E4A]/25'
+                      : 'border-[#D1B89A]/50 bg-[#FAF7F0] text-[#7B5E4A] hover:bg-[#F2E7D5]'
+                  }`}
+                >
+                  <span className="text-lg">{emoji}</span>
+                  <span>{label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </Card>
+
+        {/* Food Search Autocomplete */}
+        <Card padding="md" className="bg-white border-[#D1B89A]/60">
+          <label className="eyebrow-label block text-[10px] font-bold uppercase tracking-wider text-[#7B5E4A] mb-2.5">
+            Search Food or Dish
+          </label>
           <FoodSearch onSelect={setSelectedFood} />
-        </div>
 
-        {selectedFood && (
-          <>
-            <Card padding="sm" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center text-xl">🍛</div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold">{selectedFood.name}</p>
-                {selectedFood.name_tamil && (
-                  <p className="font-tamil text-xs text-text-muted">{selectedFood.name_tamil}</p>
-                )}
+          {selectedFood && (
+            <div className="mt-4 p-4 rounded-2xl bg-[#FAF7F0] border border-[#D1B89A] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🍛</span>
+                <div>
+                  <h4 className="card-title text-[15px] font-bold text-[#3B2A20] font-heading">{selectedFood.name}</h4>
+                  {selectedFood.name_tamil && (
+                    <span className="font-tamil text-[11px] text-[#A67C52]">{selectedFood.name_tamil}</span>
+                  )}
+                </div>
               </div>
-              <span className="text-xs text-text-muted">
-                {selectedFood.nutritional_values?.calories_per_100g} kcal/100g
+              <span className="badge-pill text-[10.5px] font-bold px-2.5 py-1 rounded-xl bg-[#F2E7D5] text-[#7B5E4A] border border-[#D1B89A]">
+                Selected
               </span>
-            </Card>
+            </div>
+          )}
+        </Card>
 
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Quantity: <span className="font-heading font-bold text-text">{quantity}g</span>
+        {/* Portion Selector */}
+        {selectedFood && (
+          <Card padding="md" className="bg-white border-[#D1B89A]/60">
+            <div className="flex items-center justify-between mb-3">
+              <label className="eyebrow-label text-[10px] font-bold uppercase tracking-wider text-[#7B5E4A] flex items-center gap-1.5">
+                <Scale size={14} className="text-[#7B5E4A]" /> Portion Size
               </label>
-              <input
-                type="range"
-                min={25}
-                max={500}
-                step={25}
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-                className="w-full accent-primary"
-              />
-              <div className="flex flex-wrap gap-2 mt-2">
-                {PORTION_PRESETS.map(({ label, value }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setQuantity(value)}
-                    className={clsx(
-                      'px-3 py-1 rounded-full text-xs border transition-colors cursor-pointer',
-                      quantity === value
-                        ? 'bg-primary text-white border-primary'
-                        : 'border-border text-text-secondary hover:bg-surface-2'
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
+              <div className="font-mono text-base font-black text-[#3B2A20]">
+                <span>{quantity}</span>
+                <span className="text-xs text-[#7B5E4A] font-normal ml-1">grams</span>
               </div>
             </div>
 
-            {selectedFood.nutritional_values && (
-              <NutritionPreview nutritionalValues={selectedFood.nutritional_values} quantityG={quantity} />
-            )}
-          </>
+            {/* Presets */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {PORTION_PRESETS.map(preset => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setQuantity(preset)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold font-mono border transition-all cursor-pointer ${
+                    quantity === preset
+                      ? 'bg-[#7B5E4A] text-white border-[#7B5E4A] shadow-xs'
+                      : 'border-[#D1B89A]/50 bg-[#FAF7F0] text-[#7B5E4A] hover:bg-[#F2E7D5]'
+                  }`}
+                >
+                  {preset}g
+                </button>
+              ))}
+            </div>
+
+            {/* Slider */}
+            <input
+              type="range"
+              min="20"
+              max="600"
+              step="10"
+              value={quantity}
+              onChange={e => setQuantity(Number(e.target.value))}
+              className="w-full h-2 rounded-lg bg-[#F2E7D5] accent-[#7B5E4A] cursor-pointer"
+            />
+          </Card>
         )}
 
-        {error && <p className="text-sm text-danger bg-red-500/15 p-3 rounded-lg">{error}</p>}
+        {/* Live Nutrition Preview */}
+        {selectedFood?.nutritional_values && (
+          <NutritionPreview
+            nutritionalValues={selectedFood.nutritional_values}
+            quantityG={quantity}
+          />
+        )}
 
-        <Button type="submit" loading={loading} disabled={!selectedFood} className="w-full">
-          Log {selectedFood?.name || 'food'} — {quantity}g
+        {error && (
+          <div className="p-3.5 rounded-2xl bg-[#FDF0EE] border border-[#F3C3BC] text-xs text-[#8F3325] font-bold">
+            {error}
+          </div>
+        )}
+
+        {/* Submit Button */}
+        <Button
+          type="submit"
+          disabled={!selectedFood}
+          loading={loading}
+          size="lg"
+          className="w-full mt-2"
+        >
+          <Utensils size={18} /> Confirm & Log Meal
         </Button>
       </form>
     </div>

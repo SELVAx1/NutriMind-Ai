@@ -5,6 +5,15 @@ import logging
 
 logger = logging.getLogger("nutrimind.auth")
 
+_http_client: httpx.AsyncClient | None = None
+
+
+def _get_http() -> httpx.AsyncClient:
+    global _http_client
+    if _http_client is None:
+        _http_client = httpx.AsyncClient(timeout=10)
+    return _http_client
+
 
 async def get_current_user(authorization: str = Header(...)):
     settings = get_settings()
@@ -13,16 +22,19 @@ async def get_current_user(authorization: str = Header(...)):
         raise HTTPException(status_code=401, detail="Invalid authorization header")
 
     token = authorization[7:]
+    apikey = settings.vite_supabase_anon_key or settings.supabase_service_role_key
+
+    if not apikey:
+        raise HTTPException(status_code=500, detail="Supabase API key not configured")
 
     try:
-        apikey = settings.vite_supabase_anon_key or settings.supabase_service_role_key
-        resp = httpx.get(
+        client = _get_http()
+        resp = await client.get(
             f"{settings.supabase_url}/auth/v1/user",
             headers={
                 "Authorization": f"Bearer {token}",
                 "apikey": apikey,
             },
-            timeout=10,
         )
 
         if resp.status_code != 200:

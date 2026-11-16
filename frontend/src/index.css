@@ -1,175 +1,267 @@
 @import "tailwindcss";
 
-@theme {
-  /* ── Breakpoints (required for Tailwind v4 responsive prefixes) ── */
-  --breakpoint-sm: 640px;
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 1024px;
-  --breakpoint-xl: 1280px;
-  --breakpoint-2xl: 1536px;
+@layer base {
+  :root {
+    /* Color Palette (Mocha / Walnut / Caramel / Latte / Vanilla / Soft Ivory) */
+    --mocha: #3B2A20;         /* Dark Chocolate: rich • warm • deep */
+    --walnut: #7B5E4A;        /* Walnut Brown: grounded • warm • natural (Primary Brand) */
+    --caramel: #A67C52;       /* Caramel: warm accent & hover */
+    --latte: #D1B89A;         /* Warm Beige: soft • smooth • cozy (Borders & dividers) */
+    --cream: #F2E7D5;         /* Vanilla Cream: gentle • warm • minimal (Secondary surfaces) */
+    --ivory: #FAF7F0;         /* Soft Ivory: clean • light • airy (Canvas & Cards) */
+    --surface-white: #FFFFFF;
 
-  /* ── Surface hierarchy (dark, layered — wider contrast gaps) ── */
-  --color-surface-0: #0A0A0C;
-  --color-surface-1: #151519;
-  --color-surface-2: #1C1C22;
-  --color-surface-3: #25252C;
-  --color-surface-4: #2E2E36;
+    /* Font Families */
+    --font-heading: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
 
-  /* ── Aliases ── */
-  --color-bg: #0A0A0C;
-  --color-bg-card: #151519;
-  --color-bg-elevated: #1C1C22;
-  --color-bg-hover: #25252C;
-  --color-bg-active: #2E2E36;
-  --color-card: #151519;
-  --color-bg-subtle: #1C1C22;
+  body {
+    background-color: var(--ivory);
+    color: var(--mocha);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 
-  /* ── Borders ── */
-  --color-border: #2D2D35;
-  --color-border-light: #222228;
-  --color-ring: rgba(16, 185, 129, 0.35);
+    /* Gentle warm artisanal stippling pattern */
+    background-image: 
+      radial-gradient(#E5DAC9 1.2px, transparent 1.2px),
+      radial-gradient(#E5DAC9 1.2px, var(--ivory) 1.2px);
+    background-size: 40px 40px;
+    background-position: 0 0, 20px 20px;
+    background-attachment: fixed;
+  }
 
-  /* ── Text ── */
-  --color-text: #FAFAFA;
-  --color-text-secondary: #A1A1AA;
-  --color-text-muted: #71717A;
-  --color-text-dim: #52525B;
+  /* Headings typography mapping (Plus Jakarta Sans, fallback Inter) */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    color: var(--mocha);
+  }
 
-  /* ── Brand ── */
-  --color-primary: #10B981;
-  --color-primary-light: #34D399;
-  --color-primary-dark: #059669;
-
-  /* ── Nutrition accents ── */
-  --color-calories: #F59E0B;
-  --color-protein: #8B5CF6;
-  --color-carbs: #3B82F6;
-  --color-fat: #EF4444;
-  --color-fibre: #14B8A6;
-  --color-iron: #F97316;
-  --color-water: #06B6D4;
-
-  /* ── Semantic ── */
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
-  --color-info: #3B82F6;
-  --color-accent: #F59E0B;
-  --color-accent-light: #FBBF24;
-  --color-accent-dark: #D97706;
-
-  /* ── Typography ── */
-  --font-heading: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --font-tamil: 'Anek Tamil', sans-serif;
-  --font-hindi: 'Anek Devanagari', sans-serif;
-
-  /* ── Shadows (dark-appropriate) ── */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  /* Body, inputs, buttons, tables mapping (Inter, fallback system-ui) */
+  p, span, div, button, input, select, textarea, table, label, a {
+    font-family: var(--font-body);
+  }
 }
 
-/* ── Reset ── */
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+/* ═══════════ EXACT TYPOGRAPHY SCALE (From Specification Table) ═══════════ */
 
-html {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  color-scheme: dark;
-}
-
-body {
-  font-family: var(--font-body);
-  font-size: 14px;
-  line-height: 1.6;
-  background: var(--color-surface-0);
-  color: var(--color-text);
-}
-
-h1, h2, h3, h4, h5, h6 {
+/* Page title (e.g. "Meal log", "Progress"): 28px, weight 800 */
+.page-title {
   font-family: var(--font-heading);
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #3B2A20;
+}
+
+/* Login title ("Welcome back"): 30px, weight 800 */
+.login-title {
+  font-family: var(--font-heading);
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.2;
   letter-spacing: -0.025em;
-  color: var(--color-text);
+  color: #3B2A20;
 }
 
-/* ── Font utilities ── */
-.font-tamil { font-family: var(--font-tamil); }
-.font-hindi { font-family: var(--font-hindi); }
-.font-heading { font-family: var(--font-heading); }
-.font-mono { font-family: var(--font-mono); }
-.tabular-nums { font-variant-numeric: tabular-nums; }
-
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #3F3F46; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #52525B; }
-
-/* ── Layout ── */
-.app-sidebar {
-  display: none;
-  flex-direction: column;
-  width: 232px;
-  height: 100vh;
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 40;
-  background: var(--color-surface-1);
-  border-right: 1px solid var(--color-border);
+/* Brand name in sidebar (NutriMind AI): 15px, weight 800 */
+.brand-name {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #3B2A20;
 }
 
-.app-main {
-  margin-left: 0;
-  padding-bottom: 5rem;
+/* Brand subtitle (NUTRITION INTELLIGENCE): 9px */
+.brand-subtitle {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7B5E4A;
+}
+
+/* Card titles (e.g. "Weight trend"): 15px, weight 700 */
+.card-title {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #3B2A20;
+}
+
+/* Large stat numbers: 22px, weight 800 */
+.stat-large {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #3B2A20;
+}
+
+/* Small stat numbers in analysis: 18px */
+.stat-small {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #3B2A20;
+}
+
+/* Eyebrow labels (small caps above titles): 10px, uppercase */
+.eyebrow-label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7B5E4A;
+}
+
+/* Section labels (e.g. "ACTIVE RESTRICTIONS"): 10px, uppercase */
+.section-label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7B5E4A;
+}
+
+/* Card subtitles and notes: 11px to 12px */
+.card-subtitle {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #7B5E4A;
+}
+
+/* Sidebar menu items: Inherits 14px */
+.sidebar-item {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Body text (default): 14px */
+.body-default {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Tables: 12.5px (headers 10px) */
+.table-data {
+  font-size: 12.5px;
+}
+.table-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Pills and badges: 10px to 11px */
+.badge-pill {
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+/* Chips: 12px */
+.chip-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Input fields and dropdowns: 14px (inherits body size) */
+.form-input {
+  font-size: 14px;
+  font-family: var(--font-body);
+}
+
+/* ═══════════ APPLICATION CONTAINER & COMPONENT STYLING ═══════════ */
+
+/* Floating Desktop Application Card */
+.desktop-wrapper {
   min-height: 100vh;
-}
-
-.app-mobile-nav {
+  padding: 1.25rem;
   display: flex;
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 50;
-  background: var(--color-surface-1);
-  border-top: 1px solid var(--color-border);
+  justify-content: center;
+  align-items: flex-start;
 }
 
-@media (min-width: 768px) {
-  .app-sidebar { display: flex; }
-  .app-main { margin-left: 232px; padding-bottom: 0; }
-  .app-mobile-nav { display: none; }
+@media (min-width: 1024px) {
+  .desktop-wrapper {
+    padding: 1.75rem 2rem;
+  }
 }
 
-/* ── Content container ── */
-.page-container {
-  max-width: 1320px;
-  margin: 0 auto;
-  padding: 0 28px;
+.desktop-app-container {
+  width: 100%;
+  max-width: 1540px;
+  background-color: #FFFFFF;
+  border-radius: 36px;
+  border: 1px solid #D1B89A;
+  box-shadow: 0 24px 70px rgba(59, 42, 32, 0.09), 0 4px 16px rgba(59, 42, 32, 0.04);
+  display: flex;
+  overflow: hidden;
+  min-height: calc(100vh - 3.5rem);
+  position: relative;
 }
 
-@media (min-width: 1536px) {
-  .page-container { max-width: 1440px; }
+/* Hover Lift */
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-lift:hover {
+  transform: translateY(-2.5px);
+  box-shadow: 0 12px 28px -6px rgba(59, 42, 32, 0.12), 0 4px 12px -2px rgba(59, 42, 32, 0.06);
 }
 
-/* ── Animations ── */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Category Card Style */
+.category-card {
+  transition: all 0.22s ease-in-out;
+  border: 1px solid #EAE0D2;
+  background: #FFFFFF;
 }
-@keyframes pulse-subtle {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+.category-card:hover {
+  border-color: #7B5E4A;
+  background-color: #FBF8F3;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -4px rgba(123, 94, 74, 0.18);
 }
-.animate-fade-in { animation: fadeIn 0.35s ease-out; }
-.animate-pulse-subtle { animation: pulse-subtle 2s ease-in-out infinite; }
 
-/* ── Recharts dark theme overrides ── */
-.recharts-cartesian-grid line { stroke: #27272A; }
-.recharts-text { fill: #71717A; font-size: 11px; }
-.recharts-tooltip-wrapper { outline: none; }
+/* Product Card Style */
+.product-card {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #EAE0D2;
+  background: #FFFFFF;
+}
+.product-card:hover {
+  border-color: #A67C52;
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px -6px rgba(59, 42, 32, 0.12);
+}
+
+/* Custom rounded scrollbar in palette tones */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #D1B89A;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #7B5E4A;
+}

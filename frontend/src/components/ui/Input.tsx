@@ -1,31 +1,57 @@
-import { clsx } from 'clsx'
-import type { InputHTMLAttributes } from 'react'
+import type { InputHTMLAttributes, ReactNode } from 'react'
+import clsx from 'clsx'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
-  hint?: string
+  helperText?: string
+  icon?: ReactNode
 }
 
-export function Input({ label, error, hint, className, id, ...props }: InputProps) {
-  const inputId = id || label?.toLowerCase().replace(/\s+/g, '-')
+export function Input({
+  label,
+  error,
+  helperText,
+  icon,
+  className,
+  id,
+  ...props
+}: InputProps) {
+  const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined)
+
   return (
-    <div className="flex flex-col gap-1.5">
-      {label && <label htmlFor={inputId} className="block text-[13px] font-medium text-text-secondary">{label}</label>}
-      <input
-        id={inputId}
-        className={clsx(
-          'w-full h-9 px-3 rounded-lg bg-surface-2 text-sm text-text border',
-          'placeholder:text-text-dim',
-          'focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary/50',
-          'transition-all duration-150',
-          error ? 'border-danger/60' : 'border-border',
-          className
+    <div className="w-full space-y-1.5">
+      {label && (
+        <label
+          htmlFor={inputId}
+          className="block text-[10px] font-bold uppercase tracking-wider text-[#7B5E4A]"
+        >
+          {label}
+        </label>
+      )}
+      <div className="relative flex items-center">
+        {icon && (
+          <div className="absolute left-3.5 flex items-center pointer-events-none text-[#7B5E4A]">
+            {icon}
+          </div>
         )}
-        {...props}
-      />
-      {error && <p className="text-xs text-danger">{error}</p>}
-      {hint && !error && <p className="text-xs text-text-dim">{hint}</p>}
+        <input
+          id={inputId}
+          className={clsx(
+            'w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-4 py-2.5 text-[14px] text-[#3B2A20] placeholder:text-[#A67C52]/50 transition-colors',
+            'focus:outline-none focus:border-[#7B5E4A] focus:ring-2 focus:ring-[#7B5E4A]/20 focus:bg-white',
+            icon && 'pl-11',
+            error && 'border-rose-400 focus:border-rose-600 focus:ring-rose-200',
+            className
+          )}
+          {...props}
+        />
+      </div>
+      {error ? (
+        <p className="text-[11.5px] text-[#8F3325] font-medium">{error}</p>
+      ) : helperText ? (
+        <p className="text-[11.5px] text-[#7B5E4A]">{helperText}</p>
+      ) : null}
     </div>
   )
 }

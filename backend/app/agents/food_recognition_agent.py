@@ -44,7 +44,7 @@ async def analyze_food_image(image_bytes: bytes) -> dict:
         enriched_items = []
         for item in items:
             food_name = item.get("name", "")
-            db_matches = search_food(food_name, limit=3)
+            db_matches = await search_food(food_name, limit=3)
 
             matched_food = None
             nutrition = None

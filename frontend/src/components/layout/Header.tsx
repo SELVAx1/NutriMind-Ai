@@ -1,43 +1,124 @@
-import { Bell, Search } from 'lucide-react'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useProfile } from '@/hooks/useProfile'
+import { SearchCommandDialog } from '@/components/layout/SearchCommandDialog'
+import { NotificationsPopover } from '@/components/layout/NotificationsPopover'
+import {
+  Search, ShieldCheck, Bell, Menu, Plus, Calendar
+} from 'lucide-react'
 
-export function Header() {
+interface HeaderProps {
+  onToggleMobileMenu?: () => void
+}
+
+export function Header({ onToggleMobileMenu }: HeaderProps) {
   const { user } = useAuth()
-  const name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'there'
-  const initial = name.charAt(0).toUpperCase()
+  const { profile } = useProfile()
+  const navigate = useNavigate()
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+
+  const todayDateStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  })
+
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .map((n: string) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'U'
 
   return (
-    <header className="flex items-center justify-between h-14 px-6 md:px-7 lg:px-8 border-b border-border bg-surface-0/80 backdrop-blur-sm sticky top-0 z-30">
-      {/* Mobile logo */}
-      <div className="flex items-center gap-2 md:hidden">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-          <span className="text-white text-[11px] font-bold">N</span>
-        </div>
-        <span className="font-semibold text-sm">NutriMind</span>
-      </div>
+    <header className="h-16 px-5 lg:px-8 border-b border-[#D1B89A]/40 bg-white flex items-center justify-between gap-4 shrink-0">
+      {/* Mobile Menu Button */}
+      <button
+        onClick={onToggleMobileMenu}
+        className="lg:hidden p-2 rounded-xl bg-[#FAF7F0] border border-[#D1B89A] text-[#3B2A20] hover:bg-[#F2E7D5]"
+        aria-label="Open navigation menu"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
 
-      {/* Spacer on desktop (page title goes in page content) */}
-      <div className="hidden md:block" />
-
-      {/* Global search */}
-      <div className="hidden md:flex flex-1 max-w-lg mx-6">
-        <button className="flex items-center w-full gap-2.5 h-9 px-3.5 rounded-lg bg-surface-2 border border-border text-text-muted text-[13px] hover:border-text-dim/60 hover:bg-surface-3 transition-all cursor-pointer">
-          <Search size={15} strokeWidth={1.8} />
-          <span className="flex-1 text-left">Search meals, nutrients, foods...</span>
-          <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-surface-1 border border-border font-mono text-text-dim">⌘K</kbd>
+      {/* Pill Search Bar (Matches PDF: "Search foods, logs, or ask a question...") */}
+      <div className="flex-1 max-w-xl">
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="w-full flex items-center justify-between px-4 py-2 rounded-xl bg-[#FAF7F0] border border-[#D1B89A]/80 text-left hover:border-[#7B5E4A] hover:bg-white transition-all group shadow-2xs cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5 text-[13px] text-[#7B5E4A]">
+            <Search className="w-4 h-4 text-[#A67C52] group-hover:text-[#3B2A20] transition-colors" />
+            <span className="truncate">Search foods, logs, or ask a question...</span>
+          </div>
+          <kbd className="hidden sm:inline-flex items-center gap-1 text-[10px] font-mono font-medium text-[#7B5E4A] bg-[#F2E7D5] border border-[#D1B89A] px-2 py-0.5 rounded-md">
+            ⌘K
+          </kbd>
         </button>
       </div>
 
-      {/* Right actions */}
-      <div className="flex items-center gap-3">
-        <button className="relative w-9 h-9 rounded-lg bg-surface-2 border border-border flex items-center justify-center hover:bg-surface-3 hover:border-text-dim/50 transition-all cursor-pointer">
-          <Bell size={16} strokeWidth={1.8} className="text-text-muted" />
-          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary" />
-        </button>
-        <div className="w-9 h-9 rounded-lg bg-surface-3 border border-border flex items-center justify-center">
-          <span className="text-text-secondary text-xs font-semibold">{initial}</span>
+      {/* Action Badges and Profile (Matches PDF Top Bar) */}
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* Safety-First Verified Badge (Matches PDF top bar right side) */}
+        <Link
+          to="/safety"
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#FAF7F0] border border-[#D1B89A] text-[10.5px] font-bold text-[#7B5E4A] hover:border-[#7B5E4A] transition-colors"
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-[#7B5E4A]" />
+          <span className="tracking-wider">SAFETY-FIRST</span>
+        </Link>
+
+        {/* Date chip */}
+        <div className="hidden md:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F2E7D5]/70 text-[11px] font-semibold text-[#7B5E4A]">
+          <Calendar className="w-3.5 h-3.5 text-[#7B5E4A]" />
+          <span>{todayDateStr}</span>
         </div>
+
+        {/* Quick Log Meal */}
+        <button
+          onClick={() => navigate('/food')}
+          className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#7B5E4A] hover:bg-[#3B2A20] text-white text-[11px] font-bold shadow-2xs transition-all cursor-pointer"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Log Meal</span>
+        </button>
+
+        {/* Notifications */}
+        <div className="relative">
+          <button
+            onClick={() => setNotifOpen(!notifOpen)}
+            className="p-2 rounded-xl bg-[#FAF7F0] border border-[#D1B89A]/80 text-[#7B5E4A] hover:text-[#3B2A20] hover:bg-[#F2E7D5] transition-all cursor-pointer"
+            title="Notifications"
+          >
+            <Bell className="w-4 h-4" />
+          </button>
+          <NotificationsPopover isOpen={notifOpen} onClose={() => setNotifOpen(false)} />
+        </div>
+
+        {/* User Pill */}
+        <Link
+          to="/profile"
+          className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-[#FAF7F0] border border-[#D1B89A] hover:border-[#7B5E4A] transition-colors group"
+        >
+          <div className="w-7 h-7 rounded-full bg-[#3B2A20] text-[#F2E7D5] font-bold text-[11px] flex items-center justify-center">
+            {initials}
+          </div>
+          <div className="hidden sm:block text-left">
+            <p className="text-[11.5px] font-bold text-[#3B2A20] leading-none">
+              {displayName}
+            </p>
+            <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#A67C52]">
+              MEMBER
+            </span>
+          </div>
+        </Link>
       </div>
+
+      <SearchCommandDialog isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
   )
 }

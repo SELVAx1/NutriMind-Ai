@@ -1,25 +1,45 @@
-import { clsx } from 'clsx'
+import type { HTMLAttributes, ReactNode } from 'react'
+import clsx from 'clsx'
 
-interface BadgeProps {
-  children: string
-  variant?: 'default' | 'vegan' | 'protein' | 'budget' | 'quick' | 'warning' | 'success' | 'calories' | 'carbs' | 'fat'
+interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
+  children: ReactNode
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'outline'
   size?: 'sm' | 'md'
+  className?: string
 }
 
-export function Badge({ children, variant = 'default', size = 'sm' }: BadgeProps) {
+export function Badge({
+  children,
+  variant = 'primary',
+  size = 'md',
+  className,
+  ...props
+}: BadgeProps) {
+  const variantStyles = {
+    primary: 'bg-[#F2E7D5] text-[#7B5E4A] border border-[#D1B89A]',
+    secondary: 'bg-[#FAF7F0] text-[#3B2A20] border border-[#D1B89A]/70',
+    success: 'bg-[#EBF2EA] text-[#365A3B] border border-[#BDD6BD]',
+    warning: 'bg-[#FAF0DE] text-[#A67C52] border border-[#E8D4BE]',
+    danger: 'bg-[#FDF0EE] text-[#8F3325] border border-[#F3C3BC]',
+    outline: 'bg-transparent text-[#7B5E4A] border border-[#D1B89A]',
+  }
+
+  const sizeStyles = {
+    sm: 'text-[10px] font-semibold px-2 py-0.5 rounded-full tracking-wide',
+    md: 'text-[10.5px] font-semibold px-2.5 py-1 rounded-full tracking-wide',
+  }
+
   return (
-    <span className={clsx(
-      'inline-flex items-center font-medium rounded-md',
-      { 'h-5 px-1.5 text-[10px]': size === 'sm', 'h-6 px-2 text-xs': size === 'md' },
-      {
-        'bg-surface-3 text-text-muted': variant === 'default',
-        'bg-emerald-500/15 text-emerald-400': variant === 'vegan' || variant === 'success',
-        'bg-violet-500/15 text-violet-400': variant === 'protein',
-        'bg-amber-500/15 text-amber-400': variant === 'budget' || variant === 'calories',
-        'bg-teal-500/15 text-teal-400': variant === 'quick',
-        'bg-red-500/15 text-red-400': variant === 'warning' || variant === 'fat',
-        'bg-blue-500/15 text-blue-400': variant === 'carbs',
-      }
-    )}>{children}</span>
+    <span
+      className={clsx(
+        'inline-flex items-center gap-1.5 transition-colors',
+        variantStyles[variant],
+        sizeStyles[size],
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </span>
   )
 }
