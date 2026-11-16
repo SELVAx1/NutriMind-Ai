@@ -3,7 +3,7 @@ import { useChat } from '@/hooks/useChat'
 import { ChatMessage } from '@/components/chat/ChatMessage'
 import { ChatInput } from '@/components/chat/ChatInput'
 import { Sparkles, ShieldCheck, HeartPulse, Globe, Send } from 'lucide-react'
-import clsx from 'clsx'
+
 
 const SUGGESTION_CHIPS = [
   'Build me a high-protein South Indian day',
@@ -25,7 +25,6 @@ export function ChatPage() {
   const { messages, loading, sendMessage } = useChat()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const [coachMode, setCoachMode] = useState<'nutrition' | 'safety'>('nutrition')
   const [selectedLanguage, setSelectedLanguage] = useState('en-IN')
 
   useEffect(() => {
@@ -35,11 +34,7 @@ export function ChatPage() {
   const handleSendPrompt = (text: string) => {
     const langName = LANGUAGES.find(l => l.code === selectedLanguage)?.name || 'English'
     const langPrefix = selectedLanguage !== 'en-IN' ? `[Respond in ${langName}] ` : ''
-    if (coachMode === 'safety') {
-      sendMessage(`${langPrefix}[SAFETY AUDIT MODE] ${text}`)
-    } else {
-      sendMessage(`${langPrefix}${text}`)
-    }
+    sendMessage(`${langPrefix}${text}`)
   }
 
   return (
@@ -73,31 +68,6 @@ export function ChatPage() {
             </select>
           </div>
 
-          {/* Toggle Chips (Matches PDF Page 9: [Nutrition] [Safety]) */}
-          <div className="inline-flex p-1 bg-[#FAF7F0] border border-[#D1B89A] rounded-xl">
-            <button
-              onClick={() => setCoachMode('nutrition')}
-              className={clsx(
-                'px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
-                coachMode === 'nutrition'
-                  ? 'bg-[#7B5E4A] text-white shadow-2xs'
-                  : 'text-[#7B5E4A] hover:text-[#3B2A20]'
-              )}
-            >
-              Nutrition
-            </button>
-            <button
-              onClick={() => setCoachMode('safety')}
-              className={clsx(
-                'px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
-                coachMode === 'safety'
-                  ? 'bg-[#8F3325] text-white shadow-2xs'
-                  : 'text-[#7B5E4A] hover:text-[#3B2A20]'
-              )}
-            >
-              Safety
-            </button>
-          </div>
         </div>
       </div>
 

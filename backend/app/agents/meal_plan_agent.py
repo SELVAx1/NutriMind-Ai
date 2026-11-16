@@ -50,6 +50,35 @@ async def generate_meal_plan(user_id: str, days: int = 1) -> dict:
         t = await sb.table("user_nutrition_targets").select("*").eq("profile_id", profile_data["id"]).maybe_single().execute()
         targets = t.data
 
+    today = date.today().isoformat()
+    logs = await sb.table("food_logs").select("*, food_log_items(*, food_items(*, nutritional_values(*)))").eq("user_id", user_id).eq("log_date", today).execute()
+
+    consumed = {"calories": 0, "protein": 0, "carbs": 0, "fat": 0, "iron": 0}
+    logged_meals = set()
+    eaten_foods = []
+
+    for log in (logs.data or []):
+        logged_meals.add(log["meal_type"])
+        for item in log.get("food_log_items", []):
+            food = item.get("food_items", {})
+            nv = food.get("nutritional_values")
+            if nv:
+                n = calculate_food_nutrition(nv, item["quantity_g"])
+                for k in consumed:
+                    consumed[k] += n.get(k, 0)
+                eaten_foods.append(f"{food.get('name', 'Unknown')} ({item['quantity_g']}g)")
+
+    all_meal_types = ["breakfast", "lunch", "snack", "dinner"]
+    remaining_meals = [m for m in all_meal_types if m not in logged_meals]
+
+    if not remaining_meals:
+        return {"error": "All meals for today are already logged!", "meals": []}
+
+    target_cal = targets.get("calories_kcal", 2000) if targets else 2000
+    target_pro = targets.get("protein_g", 60) if targets else 60
+    remaining_cal = max(0, target_cal - consumed["calories"])
+    remaining_pro = max(0, target_pro - consumed["protein"])
+
     foods = await get_common_foods()
 
     food_list = []
@@ -67,19 +96,23 @@ async def generate_meal_plan(user_id: str, days: int = 1) -> dict:
             "iron_mg_per_100g": nv.get("iron_mg", 0),
         })
 
-    prompt = f"""Generate a daily meal plan for this user:
+    already_eaten_text = ""
+    if eaten_foods:
+        already_eaten_text = f"\n\nAlready eaten today: {', '.join(eaten_foods)}\nCalories consumed: {consumed['calories']} kcal, Protein consumed: {consumed['protein']}g"
+
+    prompt = f"""Generate a meal plan for the REMAINING meals today: {', '.join(remaining_meals)}.
 
 Diet: {profile_data.get('diet_type', 'veg')}
 Region: {profile_data.get('region', 'South Indian')}
 Budget: ₹{profile_data.get('budget_daily', 200)}/day
 Max cooking time: {profile_data.get('max_cooking_min', 30)} min per meal
-Calorie target: {targets.get('calories_kcal', 2000) if targets else 2000} kcal
-Protein target: {targets.get('protein_g', 60) if targets else 60} g
+REMAINING calorie target: {remaining_cal} kcal (out of {target_cal} total)
+REMAINING protein target: {remaining_pro}g (out of {target_pro}g total){already_eaten_text}
 
 Available foods (use ONLY these IDs):
 {json.dumps(food_list, indent=2)}
 
-Generate a balanced plan with 4 meals (breakfast, lunch, snack, dinner)."""
+Generate ONLY these meals: {', '.join(remaining_meals)}. Balance nutrition to meet the remaining targets."""
 
     try:
         response = await generate_text(prompt, system=PLAN_SYSTEM)

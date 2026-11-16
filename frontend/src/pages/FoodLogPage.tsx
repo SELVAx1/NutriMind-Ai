@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/Button'
 import { FoodSearch } from '@/components/food/FoodSearch'
 import { NutritionPreview } from '@/components/food/NutritionPreview'
 import { useTodaysLogs } from '@/hooks/useFoodLog'
+import { useClinicalSafety } from '@/hooks/useClinicalSafety'
+import { calculateFoodNutrition } from '@/lib/nutrition'
 import type { FoodItem } from '@/types/database'
 import { Check, Utensils, Scale, ArrowLeft, Camera } from 'lucide-react'
 
@@ -20,6 +22,7 @@ const PORTION_PRESETS = [50, 100, 150, 200, 250, 300]
 export function FoodLogPage() {
   const navigate = useNavigate()
   const { logFood } = useTodaysLogs()
+  const { addAuditLog, runSafetyAudit } = useClinicalSafety()
   const [mealType, setMealType] = useState('breakfast')
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null)
   const [quantity, setQuantity] = useState(150)
@@ -35,6 +38,24 @@ export function FoodLogPage() {
 
     try {
       await logFood(mealType, selectedFood.id, quantity)
+
+      if (selectedFood.nutritional_values) {
+        const n = calculateFoodNutrition(selectedFood.nutritional_values, quantity)
+        const safety = runSafetyAudit(selectedFood.name)
+        const mealLabel = MEAL_TYPES.find(m => m.value === mealType)?.label || 'Lunch'
+        addAuditLog({
+          food: selectedFood.name,
+          meal: mealLabel as any,
+          calories: n.calories,
+          protein: n.protein,
+          safety: safety.safetyVerdict,
+          safetyReason: safety.flags[0] || safety.cautions[0] || 'Clean match with clinical profile.',
+          when: new Date().toISOString(),
+          databaseSource: 'IFCT 2017',
+          confidenceScore: safety.confidenceScore,
+        })
+      }
+
       setSuccess(true)
       setTimeout(() => navigate('/dashboard'), 1000)
     } catch (err) {

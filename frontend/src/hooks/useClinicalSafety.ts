@@ -26,6 +26,14 @@ const EMPTY_CLINICAL_PROFILE: ClinicalAllergenProfile = {
 export function useClinicalSafety() {
   const { user } = useAuth()
 
+  if (!localStorage.getItem('nutrimind_data_v2')) {
+    localStorage.removeItem('nutrimind_clinical_profile')
+    localStorage.removeItem('nutrimind_symptom_logs')
+    localStorage.removeItem('nutrimind_audit_logs')
+    localStorage.removeItem('nutrimind_measurements')
+    localStorage.setItem('nutrimind_data_v2', '1')
+  }
+
   const [profile, setProfile] = useState<ClinicalAllergenProfile>(() => {
     try {
       const saved = localStorage.getItem('nutrimind_clinical_profile')
@@ -38,7 +46,9 @@ export function useClinicalSafety() {
   const [symptoms, setSymptoms] = useState<SymptomLogEntry[]>(() => {
     try {
       const saved = localStorage.getItem('nutrimind_symptom_logs')
-      return saved ? JSON.parse(saved) : []
+      if (!saved) return []
+      const parsed = JSON.parse(saved) as SymptomLogEntry[]
+      return parsed.filter(s => !s.id.startsWith('sym-'))
     } catch {
       return []
     }
@@ -47,7 +57,9 @@ export function useClinicalSafety() {
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => {
     try {
       const saved = localStorage.getItem('nutrimind_audit_logs')
-      return saved ? JSON.parse(saved) : []
+      if (!saved) return []
+      const parsed = JSON.parse(saved) as AuditLogEntry[]
+      return parsed.filter(l => l.when && !isNaN(new Date(l.when).getTime()))
     } catch {
       return []
     }
@@ -56,7 +68,9 @@ export function useClinicalSafety() {
   const [measurements, setMeasurements] = useState<ProgressMeasurement[]>(() => {
     try {
       const saved = localStorage.getItem('nutrimind_measurements')
-      return saved ? JSON.parse(saved) : []
+      if (!saved) return []
+      const parsed = JSON.parse(saved) as ProgressMeasurement[]
+      return parsed.filter(m => !m.id.startsWith('meas-'))
     } catch {
       return []
     }
@@ -192,7 +206,7 @@ export function useClinicalSafety() {
   const addSymptomLog = useCallback(async (entry: Omit<SymptomLogEntry, 'id' | 'createdAt'>) => {
     const newEntry: SymptomLogEntry = {
       ...entry,
-      id: 'sym-' + Date.now(),
+      id: 'sl-' + Date.now(),
       createdAt: new Date().toISOString(),
     }
     setSymptoms(prev => [newEntry, ...prev])
@@ -214,13 +228,17 @@ export function useClinicalSafety() {
   }, [user])
 
   const addAuditLog = (entry: Omit<AuditLogEntry, 'id'>) => {
-    const newLog: AuditLogEntry = { ...entry, id: 'aud-' + Date.now() }
+    const newLog: AuditLogEntry = {
+      ...entry,
+      id: 'aud-' + Date.now(),
+      when: new Date().toISOString(),
+    }
     setAuditLogs(prev => [newLog, ...prev])
     return newLog
   }
 
   const addMeasurement = useCallback(async (measurement: Omit<ProgressMeasurement, 'id'>) => {
-    const newMeas: ProgressMeasurement = { ...measurement, id: 'meas-' + Date.now() }
+    const newMeas: ProgressMeasurement = { ...measurement, id: 'pm-' + Date.now() }
     setMeasurements(prev => [newMeas, ...prev])
 
     if (user) {

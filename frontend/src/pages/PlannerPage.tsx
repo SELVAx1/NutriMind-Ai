@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/Button'
 import {
   Flame, Clock, IndianRupee, RefreshCw, ArrowRightLeft,
   Sunrise, Sun, Cookie, Moon, Sparkles, X,
-  ShoppingBag, Check, ArrowRight, ShieldCheck, CheckCircle2,
-  Calendar, Layers, Filter
+  ShoppingBag, Check, ArrowRight, ShieldCheck, CheckCircle2
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -18,17 +17,10 @@ const MEAL_ICONS: Record<string, { label: string; icon: typeof Sunrise; color: s
   dinner: { label: 'Dinner', icon: Moon, color: 'text-[#3B2A20]', bg: 'bg-[#FAF7F0]' },
 }
 
-const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 export function PlannerPage() {
-  const { plan, setPlan, loading, error, generatePlan, swapData, swapping, swapFood, clearSwap } = useMealPlan()
+  const { plan, setPlan, loading, initialLoading, error, generatePlan, swapData, swapping, swapFood, clearSwap } = useMealPlan()
 
-  // Planner filter state
-  const [activeTab, setActiveTab] = useState<'daily' | 'weekly'>('daily')
-  const [selectedDay, setSelectedDay] = useState('Monday')
-  const [dietMode, setDietMode] = useState<'all' | 'veg' | 'jain' | 'high_protein'>('veg')
-  const [budgetTier, setBudgetTier] = useState<number>(200)
-  const [maxCookingTime, setMaxCookingTime] = useState<number>(30)
 
   const [swappingId, setSwappingId] = useState<string | null>(null)
   const [swappedNotice, setSwappedNotice] = useState<string | null>(null)
@@ -46,9 +38,10 @@ export function PlannerPage() {
   }
 
   const handleGenerate = () => {
-    const days = activeTab === 'weekly' ? 7 : 1
-    generatePlan(days)
+    generatePlan(1)
   }
+
+  const totals = plan?.daily_totals || { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, iron: 0, calcium: 0, cost: 0, cooking_time_min: 0 }
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in pb-16 max-w-6xl mx-auto">
@@ -80,79 +73,6 @@ export function PlannerPage() {
         </div>
       </div>
 
-      {/* ── Tabs & Filter Controls (Daily vs Weekly & Constraints) ── */}
-      <div className="p-4 bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl space-y-3.5 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Daily vs Weekly Toggle */}
-          <div className="inline-flex p-1 bg-white border border-[#D1B89A]/80 rounded-xl">
-            <button
-              onClick={() => setActiveTab('daily')}
-              className={clsx(
-                'px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
-                activeTab === 'daily'
-                  ? 'bg-[#7B5E4A] text-white shadow-2xs'
-                  : 'text-[#7B5E4A] hover:text-[#3B2A20]'
-              )}
-            >
-              Daily Plan
-            </button>
-            <button
-              onClick={() => setActiveTab('weekly')}
-              className={clsx(
-                'px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
-                activeTab === 'weekly'
-                  ? 'bg-[#7B5E4A] text-white shadow-2xs'
-                  : 'text-[#7B5E4A] hover:text-[#3B2A20]'
-              )}
-            >
-              7-Day Weekly Plan
-            </button>
-          </div>
-
-          {/* Quick Dietary Filters */}
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-[10.5px] font-bold text-[#A67C52] uppercase">Constraint Filters:</span>
-            {[
-              { id: 'veg', label: 'Vegetarian' },
-              { id: 'jain', label: 'Jain Pure' },
-              { id: 'high_protein', label: 'High Protein (80g+)' },
-            ].map(f => (
-              <button
-                key={f.id}
-                onClick={() => setDietMode(f.id as any)}
-                className={clsx(
-                  'px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer',
-                  dietMode === f.id
-                    ? 'bg-[#3B2A20] text-white font-bold'
-                    : 'bg-white border border-[#D1B89A] text-[#7B5E4A]'
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Weekly Day Selector */}
-        {activeTab === 'weekly' && (
-          <div className="flex items-center gap-2 overflow-x-auto pt-2 pb-1 border-t border-[#D1B89A]/40">
-            {WEEK_DAYS.map((day) => (
-              <button
-                key={day}
-                onClick={() => setSelectedDay(day)}
-                className={clsx(
-                  'px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer',
-                  selectedDay === day
-                    ? 'bg-[#7B5E4A] text-white shadow-xs'
-                    : 'bg-white text-[#7B5E4A] border border-[#D1B89A]/70 hover:bg-[#F2E7D5]/40'
-                )}
-              >
-                {day}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
 
       {swappedNotice && (
         <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 text-[12px] text-emerald-900 font-bold flex items-center gap-2 animate-fade-in shadow-xs">
@@ -161,7 +81,6 @@ export function PlannerPage() {
         </div>
       )}
 
-      {/* ── Plan Content Display ── */}
       {error && (
         <div className="p-4 rounded-xl bg-rose-50 border border-rose-300 text-[12px] text-rose-900 font-semibold">
           {error}
@@ -174,14 +93,16 @@ export function PlannerPage() {
             <Sparkles size={32} />
           </div>
           <h3 className="card-title text-[20px] font-extrabold text-[#3B2A20] mb-1 font-heading">
-            No plans yet
+            {initialLoading ? 'Loading your plan...' : 'No plans yet'}
           </h3>
           <p className="card-subtitle text-[12px] text-[#7B5E4A] max-w-sm mx-auto mb-6">
-            Complete your profile, start the backend, then generate a personalized AI meal plan.
+            {initialLoading ? '' : 'Complete your profile, start the backend, then generate a personalized AI meal plan.'}
           </p>
-          <Button onClick={handleGenerate} loading={loading} size="lg">
-            <Sparkles size={18} /> Create your first plan
-          </Button>
+          {!initialLoading && (
+            <Button onClick={handleGenerate} loading={loading} size="lg">
+              <Sparkles size={18} /> Create your first plan
+            </Button>
+          )}
         </Card>
       ) : (
         <div className="flex flex-col gap-5">
@@ -193,10 +114,10 @@ export function PlannerPage() {
                   Daily Estimated Cost
                 </span>
                 <p className="text-[22px] font-extrabold text-[#3B2A20] mt-0.5 font-heading">
-                  ₹{plan.daily_totals?.cost || 145}
+                  ₹{totals.cost || 0}
                 </p>
                 <span className="text-[10px] text-emerald-800 font-bold">
-                  ✓ Within ₹{plan.budget_limit || 200} budget
+                  ✓ Within ₹{plan?.budget_limit || 200} budget
                 </span>
               </div>
               <div>
@@ -204,10 +125,10 @@ export function PlannerPage() {
                   Total Calories
                 </span>
                 <p className="text-[22px] font-extrabold text-[#3B2A20] mt-0.5 font-heading">
-                  {plan.daily_totals?.calories || 1850} kcal
+                  {totals.calories || 0} kcal
                 </p>
                 <span className="text-[10px] text-[#7B5E4A]">
-                  Target: {plan.target_calories || 2000} kcal
+                  Target: {plan?.target_calories || 2000} kcal
                 </span>
               </div>
               <div>
@@ -215,7 +136,7 @@ export function PlannerPage() {
                   Total Protein
                 </span>
                 <p className="text-[22px] font-extrabold text-[#7B5E4A] mt-0.5 font-heading">
-                  {plan.daily_totals?.protein || 68}g
+                  {totals.protein || 0}g
                 </p>
                 <span className="text-[10px] text-[#7B5E4A] font-bold">
                   ICMR RDA compliant
@@ -226,18 +147,18 @@ export function PlannerPage() {
                   Total Prep Time
                 </span>
                 <p className="text-[22px] font-extrabold text-[#3B2A20] mt-0.5 font-heading">
-                  {plan.daily_totals?.cooking_time_min || 40} mins
+                  {totals.cooking_time_min || 0} mins
                 </p>
                 <span className="text-[10px] text-[#7B5E4A]">
-                  4 meals combined
+                  {plan?.meals?.length || 0} meals combined
                 </span>
               </div>
             </div>
           </div>
 
-          {/* 4 Meals Timeline */}
+          {/* Meals Timeline */}
           <div className="flex flex-col gap-4">
-            {plan.meals.map((meal, index) => {
+            {(plan?.meals || []).map((meal, index) => {
               const meta = MEAL_ICONS[meal.meal_type] || MEAL_ICONS.lunch
               const Icon = meta.icon
 

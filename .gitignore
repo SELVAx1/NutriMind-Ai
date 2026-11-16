@@ -53,5 +53,8 @@ yarn-debug.log*
 pnpm-debug.log*
 uvicorn.log
 
+# ── Docs (local only) ──
+docs/
+
 # ── Claude / AI tools ──
 .claude/

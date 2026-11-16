@@ -98,7 +98,7 @@ export function FoodAnalyzePage() {
           protein: item.nutrition?.protein || 9.2,
           safety: 'SAFE',
           safetyReason: `Computer vision verified • Est portion ${item.estimated_portion_grams}g`,
-          when: 'Today, Just now',
+          when: new Date().toISOString(),
           databaseSource: 'IFCT 2017',
           confidenceScore: Math.round((result.overall_confidence || 0.94) * 100),
         })

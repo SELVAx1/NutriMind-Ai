@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { apiPost } from '@/lib/api'
+import { useState, useEffect } from 'react'
+import { apiPost, apiGet } from '@/lib/api'
 
 export interface MealRecommendation {
   meal_type: string
@@ -59,9 +59,47 @@ export interface SwapResponse {
 export function useMealPlan() {
   const [plan, setPlan] = useState<MealPlanResponse | null>(null)
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [swapData, setSwapData] = useState<SwapResponse | null>(null)
   const [swapping, setSwapping] = useState(false)
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await apiGet<{ plans: any[] }>('/api/meals/plans')
+        if (data?.plans && data.plans.length > 0) {
+          const latestPlan = data.plans[0]
+          const itemsData = await apiGet<{ plan_id: string; items: any[] }>(`/api/meals/plans/${latestPlan.id}`)
+          if (itemsData?.items && itemsData.items.length > 0) {
+            const meals: MealRecommendation[] = itemsData.items.map((item: any) => ({
+              meal_type: item.meal_type,
+              food_id: item.food_item_id,
+              food_name: item.food_items?.name || 'Unknown',
+              food_name_tamil: item.food_items?.name_tamil,
+              quantity_g: item.quantity_g || 150,
+              prep_time_min: item.prep_time_min || 15,
+              estimated_cost: item.estimated_cost || 0,
+              explanation: item.explanation || '',
+              nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, iron: 0, calcium: 0 },
+            }))
+            const totalCost = meals.reduce((a, m) => a + m.estimated_cost, 0)
+            const totalTime = meals.reduce((a, m) => a + m.prep_time_min, 0)
+            setPlan({
+              plan_id: latestPlan.id,
+              day: 1,
+              meals,
+              daily_totals: { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, iron: 0, calcium: 0, cost: totalCost, cooking_time_min: totalTime },
+              budget_limit: 200,
+              target_calories: 2000,
+              target_protein: 60,
+            })
+          }
+        }
+      } catch {}
+      setInitialLoading(false)
+    })()
+  }, [])
 
   async function generatePlan(day = 1) {
     setLoading(true)
@@ -140,5 +178,5 @@ export function useMealPlan() {
     setSwapData(null)
   }
 
-  return { plan, setPlan, loading, error, generatePlan, swapData, swapping, swapFood, clearSwap }
+  return { plan, setPlan, loading, initialLoading, error, generatePlan, swapData, swapping, swapFood, clearSwap }
 }

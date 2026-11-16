@@ -35,7 +35,6 @@ const NAV_SECTIONS = [
     items: [
       { name: 'NutriTwin & Simulator', to: '/nutritwin', icon: Sparkles, badge: 'TWIN' },
       { name: 'Smart Grocery', to: '/grocery', icon: ShoppingBag },
-      { name: 'Nutritionist View', to: '/nutritionist', icon: Stethoscope },
     ],
   },
 ]

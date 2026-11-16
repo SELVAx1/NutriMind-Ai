@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTodaysLogs } from '@/hooks/useFoodLog'
 import { useProfile } from '@/hooks/useProfile'
 import { useCommonFoods } from '@/hooks/useFood'
+import { useClinicalSafety } from '@/hooks/useClinicalSafety'
 import { calculateFoodNutrition, sumDailyNutrition } from '@/lib/nutrition'
 import {
   ChevronLeft, ChevronRight, Plus, Camera, Trash2,
@@ -14,6 +15,7 @@ export function TrackerPage() {
   const { targets } = useProfile()
   const { logs, loading, logFood, deleteLogItem } = useTodaysLogs()
   const { foods: commonFoods } = useCommonFoods()
+  const { addAuditLog, runSafetyAudit } = useClinicalSafety()
 
   const [modalOpen, setModalOpen] = useState(false)
   const [targetMealSlot, setTargetMealSlot] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('breakfast')
@@ -71,6 +73,23 @@ export function TrackerPage() {
     setAddingFood(true)
     try {
       await logFood(targetMealSlot, food.id, 150)
+
+      if (food.nutritional_values) {
+        const n = calculateFoodNutrition(food.nutritional_values, 150)
+        const safety = runSafetyAudit(food.name)
+        addAuditLog({
+          food: food.name,
+          meal: mealLabels[targetMealSlot] as any,
+          calories: n.calories,
+          protein: n.protein,
+          safety: safety.safetyVerdict,
+          safetyReason: safety.flags[0] || safety.cautions[0] || 'Clean match with clinical profile.',
+          when: new Date().toISOString(),
+          databaseSource: 'IFCT 2017',
+          confidenceScore: safety.confidenceScore,
+        })
+      }
+
       setModalOpen(false)
     } catch (err) {
       console.error('Failed to log food:', err)

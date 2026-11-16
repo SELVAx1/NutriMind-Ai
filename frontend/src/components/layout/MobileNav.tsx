@@ -27,7 +27,6 @@ const NAV_ITEMS = [
   { name: 'Clinical Profile', to: '/profile', icon: UserCheck },
   { name: 'NutriTwin & Simulator', to: '/nutritwin', icon: Sparkles },
   { name: 'Smart Grocery', to: '/grocery', icon: ShoppingBag },
-  { name: 'Nutritionist View', to: '/nutritionist', icon: Stethoscope },
 ]
 
 export function MobileNav({ isOpen, onClose }: MobileNavProps) {
