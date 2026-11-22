@@ -80,7 +80,6 @@ class TableQuery:
         return self
 
     def ilike(self, column: str, pattern: str) -> "TableQuery":
-        safe = pattern.replace("%", "*").replace("_", "*")
         self._params[column] = f"ilike.{pattern}"
         return self
 
@@ -108,7 +107,11 @@ class TableQuery:
 
     def maybe_single(self) -> "TableQuery":
         self._headers["Accept"] = "application/vnd.pgrst.object+json"
-        self._headers["Prefer"] = self._headers.get("Prefer", "") + ",missing=default"
+        # Set Prefer header cleanly — don't duplicate
+        prefer = self._headers.get("Prefer", "return=representation")
+        if "missing=default" not in prefer:
+            prefer = prefer + ",missing=default"
+        self._headers["Prefer"] = prefer
         return self
 
     def single(self) -> "TableQuery":

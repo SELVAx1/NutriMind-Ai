@@ -7,8 +7,43 @@ import { useProfile } from '@/hooks/useProfile'
 import { calculateICMRTargets } from '@/lib/nutrition'
 import {
   User, Sparkles, ShieldCheck, Check,
-  IndianRupee, Utensils, LogOut
+  Utensils, LogOut, Sun, Moon, Monitor
 } from 'lucide-react'
+import { useTheme } from '@/contexts/ThemeContext'
+
+function AppearanceCard() {
+  const { theme, setTheme } = useTheme()
+  const options = [
+    { value: 'light' as const, label: 'Light', icon: Sun },
+    { value: 'dark' as const, label: 'Dark', icon: Moon },
+    { value: 'system' as const, label: 'System', icon: Monitor },
+  ]
+
+  return (
+    <Card padding="lg" className="bg-white border-[#D1B89A]/60">
+      <h2 className="text-[15px] font-bold text-[#3B2A20] mb-4 flex items-center gap-2 font-heading">
+        <Sun className="w-5 h-5 text-[#7B5E4A]" />
+        Appearance
+      </h2>
+      <div className="flex gap-2">
+        {options.map(({ value, label, icon: Icon }) => (
+          <button
+            key={value}
+            onClick={() => setTheme(value)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+              theme === value
+                ? 'bg-[#7B5E4A] text-white border-[#7B5E4A] shadow-xs'
+                : 'bg-[#FAF7F0] border-[#D1B89A] text-[#7B5E4A] hover:bg-[#F2E7D5]'
+            }`}
+          >
+            <Icon className="w-4 h-4" />
+            {label}
+          </button>
+        ))}
+      </div>
+    </Card>
+  )
+}
 
 export function SettingsPage() {
   const { user, signOut } = useAuth()
@@ -186,6 +221,7 @@ export function SettingsPage() {
                   type="number"
                   value={age}
                   onChange={(e) => setAge(Number(e.target.value))}
+                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-4 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
                 />
               </div>
@@ -198,6 +234,7 @@ export function SettingsPage() {
                   type="number"
                   value={heightCm}
                   onChange={(e) => setHeightCm(Number(e.target.value))}
+                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-4 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
                 />
               </div>
@@ -210,6 +247,7 @@ export function SettingsPage() {
                   type="number"
                   value={weightKg}
                   onChange={(e) => setWeightKg(Number(e.target.value))}
+                  onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-4 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
                 />
               </div>
@@ -322,6 +360,9 @@ export function SettingsPage() {
               </div>
             </div>
           </Card>
+
+          {/* Appearance */}
+          <AppearanceCard />
 
           {/* Account & Session */}
           <Card padding="lg" className="border-[#D1B89A]/50 bg-white">

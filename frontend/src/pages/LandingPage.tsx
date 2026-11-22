@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
 import {
   Apple, ArrowRight, Camera, CalendarRange, MessageSquareText,
-  ShieldCheck, Sparkles, RefreshCw, Search, Leaf, CheckCircle2,
-  Utensils, BarChart3, Globe
+  ShieldCheck, Sparkles, RefreshCw, Search, CheckCircle2,
+  Utensils, Globe
 } from 'lucide-react'
 
 export function LandingPage() {
@@ -43,7 +43,7 @@ export function LandingPage() {
             Verified by IFCT 2017 and ICMR-NIN dietary guidelines
           </div>
 
-          <h1 className="text-[44px] sm:text-[56px] font-extrabold tracking-tight leading-[1.08] mb-5 font-heading">
+          <h1 className="text-[44px] sm:text-[56px] font-extrabold tracking-tight leading-[1.08] mb-5 font-heading text-[#3B2A20]">
             Indian nutrition tracking that actually understands your plate.
           </h1>
 
@@ -74,7 +74,7 @@ export function LandingPage() {
             </span>
             <span className="flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              40+ verified Indian foods
+              200+ verified Indian foods
             </span>
             <span className="flex items-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" />

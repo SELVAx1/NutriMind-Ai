@@ -55,7 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       for (let i = localStorage.length - 1; i >= 0; i--) {
         const key = localStorage.key(i)
-        if (key && (key.startsWith('sb-') || key.includes('auth-token') || key.includes('supabase'))) {
+        if (key && (
+          key.startsWith('sb-') ||
+          key.startsWith('nutrimind_') ||
+          key.includes('auth-token') ||
+          key.includes('supabase')
+        )) {
           localStorage.removeItem(key)
         }
       }

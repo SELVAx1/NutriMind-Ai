@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger("nutrimind.knowledge_agent")
 
 
-async def handle_rag_query(user_id: str, query: str) -> dict:
+async def handle_rag_query(user_id: str, query: str, lang: str | None = None) -> dict:
     sb = get_supabase()
     profile = await sb.table("user_profiles").select("*").eq("user_id", user_id).maybe_single().execute()
 
@@ -19,7 +19,11 @@ async def handle_rag_query(user_id: str, query: str) -> dict:
         user_profile=profile.data,
     )
 
-    response = await generate_text(context)
+    system = None
+    if lang and lang.lower() != 'english':
+        system = f"You are NutriMind AI, a nutrition assistant. You MUST respond entirely in {lang}. Keep citation references, numbers, and scientific terms intact but explain everything in {lang}."
+
+    response = await generate_text(context, system=system)
 
     citations = []
     for chunk in chunks:

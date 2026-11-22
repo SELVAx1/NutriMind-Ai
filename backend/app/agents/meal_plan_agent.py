@@ -9,25 +9,9 @@ import logging
 
 logger = logging.getLogger("nutrimind.meal_plan")
 
-PLAN_SYSTEM = """You are NutriMind AI's meal planning engine. Generate a structured daily meal plan using ONLY the foods from the provided list.
-
-Rules:
-- Use ONLY food IDs from the provided list. Do not invent foods.
-- Respect the user's diet type (veg/non-veg/vegan).
-- Stay within the daily budget.
-- Keep prep time under the user's max cooking time per meal.
-- Balance nutrition across meals to approach daily targets.
-- For each meal, explain WHY you chose it in one sentence.
-
-Respond with ONLY valid JSON:
-{
-  "meals": [
-    {"meal_type": "breakfast", "food_id": "uuid", "food_name": "Idli", "quantity_g": 200, "estimated_cost": 25, "prep_time_min": 10, "explanation": "Idli provides easily digestible carbs and protein to start the day, and fits your budget."},
-    {"meal_type": "lunch", "food_id": "uuid", "food_name": "...", ...},
-    {"meal_type": "snack", "food_id": "uuid", "food_name": "...", ...},
-    {"meal_type": "dinner", "food_id": "uuid", "food_name": "...", ...}
-  ]
-}"""
+PLAN_SYSTEM = """You are NutriMind AI's meal planner. Use ONLY food IDs from the list. Respond with ONLY valid JSON:
+{"meals":[{"meal_type":"breakfast","food_id":"<id from list>","food_name":"Idli","quantity_g":200,"estimated_cost":25,"prep_time_min":10,"explanation":"High carb, light protein to start the day."}]}
+Rules: use real IDs from provided list; respect diet type; stay within budget; one sentence explanation per meal."""
 
 
 def extract_json(text: str) -> str:
@@ -81,41 +65,38 @@ async def generate_meal_plan(user_id: str, days: int = 1) -> dict:
 
     foods = await get_common_foods()
 
+    # Build compact food list — limit to 25 items to stay within token limits
     food_list = []
-    for f in foods:
+    for f in foods[:25]:
         nv = f.get("nutritional_values")
         if not nv:
             continue
         food_list.append({
             "id": f["id"],
-            "name": f["name"],
-            "name_tamil": f.get("name_tamil", ""),
-            "category": f.get("category", ""),
-            "calories_per_100g": nv.get("calories_per_100g", 0),
-            "protein_per_100g": nv.get("protein_per_100g", 0),
-            "iron_mg_per_100g": nv.get("iron_mg", 0),
+            "n": f["name"],
+            "nt": f.get("name_tamil", ""),
+            "cat": f.get("category", ""),
+            "cal": round(nv.get("calories_per_100g", 0), 1),
+            "pro": round(nv.get("protein_per_100g", 0), 1),
+            "fe": round(nv.get("iron_mg", 0), 1),
         })
 
     already_eaten_text = ""
     if eaten_foods:
-        already_eaten_text = f"\n\nAlready eaten today: {', '.join(eaten_foods)}\nCalories consumed: {consumed['calories']} kcal, Protein consumed: {consumed['protein']}g"
+        already_eaten_text = f"\nAlready eaten: {', '.join(eaten_foods[:5])}. Consumed: {consumed['calories']} kcal, {consumed['protein']}g protein."
 
-    prompt = f"""Generate a meal plan for the REMAINING meals today: {', '.join(remaining_meals)}.
+    # Compact JSON — no indent to minimise tokens
+    foods_json = json.dumps(food_list, separators=(',', ':'))
 
-Diet: {profile_data.get('diet_type', 'veg')}
-Region: {profile_data.get('region', 'South Indian')}
-Budget: ₹{profile_data.get('budget_daily', 200)}/day
-Max cooking time: {profile_data.get('max_cooking_min', 30)} min per meal
-REMAINING calorie target: {remaining_cal} kcal (out of {target_cal} total)
-REMAINING protein target: {remaining_pro}g (out of {target_pro}g total){already_eaten_text}
-
-Available foods (use ONLY these IDs):
-{json.dumps(food_list, indent=2)}
-
-Generate ONLY these meals: {', '.join(remaining_meals)}. Balance nutrition to meet the remaining targets."""
+    prompt = f"""Generate a meal plan for: {', '.join(remaining_meals)}.
+Diet:{profile_data.get('diet_type','veg')} Region:{profile_data.get('region','South Indian')} Budget:Rs{profile_data.get('budget_daily',200)}/day CookTime:{profile_data.get('max_cooking_min',30)}min
+Remaining targets: {remaining_cal}kcal {remaining_pro}g protein (of {target_cal}kcal {target_pro}g total){already_eaten_text}
+Fields: id=food_id, n=name, nt=tamil_name, cat=category, cal=cal/100g, pro=protein/100g
+Foods: {foods_json}
+Generate ONLY meals: {', '.join(remaining_meals)}."""
 
     try:
-        response = await generate_text(prompt, system=PLAN_SYSTEM)
+        response = await generate_text(prompt, system=PLAN_SYSTEM, json_mode=True)
 
         json_str = extract_json(response)
         plan_data = json.loads(json_str.strip())

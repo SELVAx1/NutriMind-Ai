@@ -51,7 +51,10 @@ class AnalyzeRequest(BaseModel):
 @router.post("/analyze")
 async def analyze_food_image_endpoint(req: AnalyzeRequest, user=Depends(get_current_user)):
     try:
-        image_bytes = base64.b64decode(req.image_base64)
+        raw_b64 = req.image_base64
+        if "," in raw_b64:
+            raw_b64 = raw_b64.split(",", 1)[1]
+        image_bytes = base64.b64decode(raw_b64)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid base64 image data")
     result = await run_food_analysis(image_bytes)

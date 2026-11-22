@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
 import { apiPost, apiGet } from '@/lib/api'
-import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import {
   Check, Copy, RefreshCw, ShoppingBag, Sparkles,
-  AlertTriangle, Clock, ArrowRight, Utensils, Plus, Trash2
+  AlertTriangle, Clock, Plus, Trash2
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -29,28 +29,43 @@ interface PantryItem {
   daysLeft: number
 }
 
-const DEFAULT_PANTRY: PantryItem[] = []
-
 export function GroceryPage() {
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'list' | 'pantry' | 'fridge'>('list')
   const [list, setList] = useState<GroceryList | null>(null)
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({})
 
-  // Pantry State — persisted in localStorage
-  const [pantryItems, setPantryItems] = useState<PantryItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('nutrimind_pantry')
-      return saved ? JSON.parse(saved) : DEFAULT_PANTRY
-    } catch {
-      return DEFAULT_PANTRY
-    }
-  })
+  const [pantryItems, setPantryItems] = useState<PantryItem[]>([])
 
   useEffect(() => {
-    try { localStorage.setItem('nutrimind_pantry', JSON.stringify(pantryItems)) } catch {}
-  }, [pantryItems])
+    if (!user) return
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('pantry_items')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+        if (data) {
+          setPantryItems(data.map((r: any) => ({
+            id: r.id,
+            name: r.name,
+            quantity: r.quantity || '',
+            category: r.category || 'Pantry Item',
+            daysLeft: r.days_left ?? 7,
+          })))
+        }
+      } catch {
+        try {
+          const saved = localStorage.getItem('nutrimind_pantry')
+          if (saved) setPantryItems(JSON.parse(saved))
+        } catch {}
+      }
+    })()
+  }, [user])
+
   const [newItemName, setNewItemName] = useState('')
   const [newItemQty, setNewItemQty] = useState('')
   const [newItemDays, setNewItemDays] = useState('7')
@@ -114,7 +129,7 @@ export function GroceryPage() {
     setTimeout(() => setCopied(false), 2500)
   }
 
-  const handleAddPantryItem = (e: React.FormEvent) => {
+  const handleAddPantryItem = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newItemName.trim()) return
     const item: PantryItem = {
@@ -128,6 +143,30 @@ export function GroceryPage() {
     setNewItemName('')
     setNewItemQty('')
     setNewItemDays('7')
+
+    if (user) {
+      try {
+        const { data } = await supabase.from('pantry_items').insert({
+          user_id: user.id,
+          name: item.name,
+          quantity: item.quantity,
+          category: item.category,
+          days_left: item.daysLeft,
+        }).select().single()
+        if (data) {
+          setPantryItems(prev => prev.map(p => p.id === item.id ? { ...p, id: data.id } : p))
+        }
+      } catch {}
+    }
+  }
+
+  const handleDeletePantryItem = async (itemId: string) => {
+    setPantryItems(prev => prev.filter(i => i.id !== itemId))
+    if (user && !itemId.startsWith('p-')) {
+      try {
+        await supabase.from('pantry_items').delete().eq('id', itemId)
+      } catch {}
+    }
   }
 
   const toggleFridgeSelect = (name: string) => {
@@ -278,7 +317,7 @@ export function GroceryPage() {
                 Estimated Total
               </span>
               <span className="text-[22px] font-extrabold text-[#3B2A20] font-heading">
-                ₹{list?.total_cost || 485}
+                ₹{list?.total_cost || 0}
               </span>
             </div>
           </div>
@@ -432,8 +471,8 @@ export function GroceryPage() {
                         {item.daysLeft <= 0 ? 'Expired' : `${item.daysLeft} days left`}
                       </span>
                       <button
-                        onClick={() => setPantryItems(pantryItems.filter(i => i.id !== item.id))}
-                        className="text-[#D1B89A] hover:text-[#8F3325] p-1"
+                        onClick={() => handleDeletePantryItem(item.id)}
+                        className="text-[#D1B89A] hover:text-[#8F3325] p-1 cursor-pointer"
                       >
                         <Trash2 size={13} />
                       </button>
@@ -463,6 +502,11 @@ export function GroceryPage() {
             </div>
 
             <div className="flex flex-wrap gap-2 pt-2">
+              {pantryItems.length === 0 && (
+                <p className="text-[12px] text-[#7B5E4A] py-4">
+                  No pantry items yet. Add items in the <button type="button" onClick={() => setActiveTab('pantry')} className="underline font-bold text-[#3B2A20] cursor-pointer">Pantry tab</button> first, then come back here to generate recipes.
+                </p>
+              )}
               {pantryItems.map(item => {
                 const active = selectedFridgeItems.includes(item.name)
                 return (

@@ -4,7 +4,7 @@ import { useProfile } from '@/hooks/useProfile'
 import {
   LayoutDashboard, BrainCircuit, Utensils, History, CalendarRange,
   TrendingUp, ShieldAlert, Activity, MessageSquareHeart, UserCheck,
-  Sparkles, ShoppingBag, Stethoscope, LogOut, Apple, Camera
+  Sparkles, ShoppingBag, LogOut, Apple, Camera
 } from 'lucide-react'
 import clsx from 'clsx'
 

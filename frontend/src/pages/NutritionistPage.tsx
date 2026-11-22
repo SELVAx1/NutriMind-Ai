@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react'
 import { apiPost, apiGet } from '@/lib/api'
-import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import {
-  Users, Stethoscope, CheckCircle2, AlertTriangle, FileText,
-  Calendar, Clock, Video, ShieldCheck, ChevronRight, Download, Check, X
+  Users, CheckCircle2, Video, Download, Check
 } from 'lucide-react'
 import clsx from 'clsx'
 

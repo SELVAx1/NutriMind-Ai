@@ -68,7 +68,7 @@ export function FoodAnalyzePage() {
     if (!imageBase64) return
     setAnalyzing(true)
     try {
-      const res = await apiPost<AnalysisResult>('/api/food/analyze', { image_base64: imageBase64 })
+      const res = await apiPost<AnalysisResult>('/api/food/analyze', { image_base64: imageBase64 }, true)
       setResult(res)
     } catch {
       setResult({
@@ -94,8 +94,8 @@ export function FoodAnalyzePage() {
         addAuditLog({
           food: item.name,
           meal: (mealType.charAt(0).toUpperCase() + mealType.slice(1)) as any,
-          calories: item.nutrition?.calories || 320,
-          protein: item.nutrition?.protein || 9.2,
+          calories: item.nutrition?.calories || 0,
+          protein: item.nutrition?.protein || 0,
           safety: 'SAFE',
           safetyReason: `Computer vision verified • Est portion ${item.estimated_portion_grams}g`,
           when: new Date().toISOString(),

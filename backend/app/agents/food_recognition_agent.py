@@ -84,9 +84,14 @@ async def analyze_food_image(image_bytes: bytes) -> dict:
         }
     except Exception as e:
         logger.error("Food recognition failed: %s", e)
+        err_msg = str(e)
+        if "429" in err_msg or "quota" in err_msg.lower():
+            notes = "Google AI Studio vision quota exceeded (Free tier limit: 20 requests/day). Please update GOOGLE_AI_API_KEY with a fresh key or try again after quota resets."
+        else:
+            notes = f"Analysis failed: {err_msg[:120]}"
         return {
             "items": [],
             "overall_confidence": 0,
-            "notes": f"Analysis failed: {str(e)}",
+            "notes": notes,
             "error": "analysis_failed",
         }

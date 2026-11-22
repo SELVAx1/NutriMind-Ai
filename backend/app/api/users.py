@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 class ProfileCreate(BaseModel):
     full_name: str | None = None
     age: int | None = None
-    gender: str | None = None
+    gender: str | None = None  # stored locally only, not sent to DB
     height_cm: float | None = None
     weight_kg: float | None = None
     activity_level: str | None = None
@@ -18,6 +18,9 @@ class ProfileCreate(BaseModel):
     region: str | None = None
     budget_daily: float | None = None
     max_cooking_min: int | None = None
+    language_preference: str | None = None
+    allergies: list[str] | None = None
+    health_conditions: list[str] | None = None
 
 
 @router.get("/profile")
@@ -39,7 +42,9 @@ async def create_or_update_profile(req: ProfileCreate, user=Depends(get_current_
 
     existing = await sb.table("user_profiles").select("*").eq("user_id", user["id"]).maybe_single().execute()
 
-    profile_data = req.model_dump(exclude_none=True)
+    # Strip fields that don't exist in the DB schema
+    _db_exclude = {"gender", "allergies", "health_conditions"}
+    profile_data = {k: v for k, v in req.model_dump(exclude_none=True).items() if k not in _db_exclude}
     profile_data["user_id"] = user["id"]
 
     if existing.data:
@@ -61,6 +66,7 @@ async def create_or_update_profile(req: ProfileCreate, user=Depends(get_current_
     activity = merged.get("activity_level")
     gender = merged.get("gender", "male")
 
+    saved_targets = None
     if weight and height and age and activity:
         bmr = calculate_bmr(weight, height, age, gender)
         tdee = calculate_tdee(bmr, activity)
@@ -70,8 +76,11 @@ async def create_or_update_profile(req: ProfileCreate, user=Depends(get_current_
         existing_targets = await sb.table("user_nutrition_targets").select("id").eq("profile_id", profile["id"]).maybe_single().execute()
 
         if existing_targets.data:
-            await sb.table("user_nutrition_targets").update(targets).eq("id", existing_targets.data["id"]).execute()
+            t_result = await sb.table("user_nutrition_targets").update(targets).eq("id", existing_targets.data["id"]).execute()
         else:
-            await sb.table("user_nutrition_targets").insert(targets).execute()
+            t_result = await sb.table("user_nutrition_targets").insert(targets).execute()
 
-    return {"profile": profile, "message": "Profile saved"}
+        if t_result.data:
+            saved_targets = t_result.data[0] if isinstance(t_result.data, list) else t_result.data
+
+    return {"profile": profile, "targets": saved_targets, "message": "Profile saved"}

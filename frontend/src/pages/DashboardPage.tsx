@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDashboard } from '@/hooks/useDashboard'
 import { useClinicalSafety } from '@/hooks/useClinicalSafety'
+import { useStreak } from '@/hooks/useStreak'
+import { DashboardSkeleton } from '@/components/ui/Skeleton'
 import { apiPost } from '@/lib/api'
 import {
   Sparkles, ShieldCheck, ArrowRight, CheckCircle2,
@@ -19,8 +21,9 @@ interface ChatResponse {
 }
 
 export function DashboardPage() {
-  const { user } = useAuth()
-  const { loading, dailyNutrition, targets, todaysMeals, gaps, nextMeal } = useDashboard()
+  useAuth()
+  const { loading, dailyNutrition, targets, todaysMeals, gaps } = useDashboard()
+  const { streak, loggedToday } = useStreak()
   const { profile: clinicalProfile, runSafetyAudit } = useClinicalSafety()
   const navigate = useNavigate()
 
@@ -47,10 +50,10 @@ export function DashboardPage() {
   const currentCarbs = dailyNutrition.carbs
   const currentFat = dailyNutrition.fat
 
-  const calPct = Math.min(100, Math.round((currentCalories / targetCalories) * 100))
-  const proPct = Math.min(100, Math.round((currentProtein / targetProtein) * 100))
-  const carbPct = Math.min(100, Math.round((currentCarbs / targetCarbs) * 100))
-  const fatPct = Math.min(100, Math.round((currentFat / targetFat) * 100))
+  const calPct = targetCalories > 0 ? Math.min(100, Math.round((currentCalories / targetCalories) * 100)) : 0
+  const proPct = targetProtein > 0 ? Math.min(100, Math.round((currentProtein / targetProtein) * 100)) : 0
+  const carbPct = targetCarbs > 0 ? Math.min(100, Math.round((currentCarbs / targetCarbs) * 100)) : 0
+  const fatPct = targetFat > 0 ? Math.min(100, Math.round((currentFat / targetFat) * 100)) : 0
 
   const handleAnalyzeNutrition = async () => {
     if (!aiInput.trim()) return
@@ -102,14 +105,7 @@ export function DashboardPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-3 border-mocha border-t-transparent rounded-full animate-spin" />
-          <p className="text-walnut/60 text-sm">Loading dashboard...</p>
-        </div>
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   return (
@@ -127,13 +123,21 @@ export function DashboardPage() {
             One place for intake intelligence, allergen safety and the audit trail behind every suggestion.
           </p>
         </div>
-        <Link
-          to="/profile"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#7B5E4A] hover:bg-[#3B2A20] text-white text-[12.5px] font-bold shadow-xs transition-all w-fit shrink-0 cursor-pointer"
-        >
-          <span>Set up your profile</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
+        <div className="flex items-center gap-3 shrink-0">
+          {streak > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F2E7D5] border border-[#D1B89A] text-[12px] font-bold text-[#3B2A20]">
+              <span className="text-base">{streak >= 7 ? '🔥' : '✨'}</span>
+              <span>{streak}-day streak{loggedToday ? '' : ' — log today!'}</span>
+            </div>
+          )}
+          <Link
+            to="/profile"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#7B5E4A] hover:bg-[#3B2A20] text-white text-[12.5px] font-bold shadow-xs transition-all cursor-pointer"
+          >
+            <span>Profile</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
 
       {/* Unified AI Input Box */}

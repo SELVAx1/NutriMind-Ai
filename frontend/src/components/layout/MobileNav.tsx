@@ -4,7 +4,7 @@ import { useProfile } from '@/hooks/useProfile'
 import {
   LayoutDashboard, BrainCircuit, Utensils, History, CalendarRange,
   TrendingUp, ShieldAlert, Activity, MessageSquareHeart, UserCheck,
-  Sparkles, ShoppingBag, Stethoscope, LogOut, Apple, Camera, X
+  Sparkles, ShoppingBag, LogOut, Apple, Camera, X
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -27,6 +27,7 @@ const NAV_ITEMS = [
   { name: 'Clinical Profile', to: '/profile', icon: UserCheck },
   { name: 'NutriTwin & Simulator', to: '/nutritwin', icon: Sparkles },
   { name: 'Smart Grocery', to: '/grocery', icon: ShoppingBag },
+  { name: 'Settings', to: '/settings', icon: UserCheck },
 ]
 
 export function MobileNav({ isOpen, onClose }: MobileNavProps) {

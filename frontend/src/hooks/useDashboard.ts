@@ -54,7 +54,8 @@ export function useDashboard(): DashboardData {
       const food = item.food_items
       if (!food?.nutritional_values) continue
       const n = calculateFoodNutrition(food.nutritional_values, item.quantity_g)
-      const cost = Math.round(((food.estimated_cost_inr || 20) * (item.quantity_g / (food.typical_portion_g || 150))))
+      const portion = food.typical_portion_g && food.typical_portion_g > 0 ? food.typical_portion_g : 150
+      const cost = Math.round((food.estimated_cost_inr || 20) * (item.quantity_g / portion))
       allItems.push({
         id: item.id,
         name: food.name,

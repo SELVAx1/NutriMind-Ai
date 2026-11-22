@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useClinicalSafety } from '@/hooks/useClinicalSafety'
 import {
-  ShieldAlert, ShieldCheck, CheckCircle2, AlertTriangle,
-  AlertCircle, Sparkles, Check, Plus, X
+  ShieldAlert, CheckCircle2,
+  Check, X
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -38,7 +38,7 @@ export function SafetyAuditorPage() {
   const [searchParams] = useSearchParams()
   const initialQuery = searchParams.get('query') || ''
 
-  const { profile, updateClinicalProfile, runSafetyAudit, addAuditLog } = useClinicalSafety()
+  const { profile, updateClinicalProfile, runSafetyAudit } = useClinicalSafety()
 
   // Form State
   const [allergies, setAllergies] = useState<string[]>(profile.allergies || [])
@@ -54,28 +54,13 @@ export function SafetyAuditorPage() {
   const [safetyNotes, setSafetyNotes] = useState(profile.safetyNotes || '')
   const [consentAcknowledged, setConsentAcknowledged] = useState<boolean>(profile.consentAcknowledged ?? true)
 
-  const [customInput, setCustomInput] = useState('')
-  const [customCategory, setCustomCategory] = useState<'allergy' | 'condition' | 'medication' | 'supplement' | null>(null)
   const [savedSuccess, setSavedSuccess] = useState(false)
 
   // Auditor Test Engine State
   const [testQuery, setTestQuery] = useState(initialQuery)
   const [auditing, setAuditing] = useState(false)
   const [auditResult, setAuditResult] = useState<any | null>(null)
-  const [auditHistory, setAuditHistory] = useState<any[]>([
-    {
-      query: 'Peanut chikki with jaggery',
-      verdict: 'FLAGGED',
-      reason: 'Contains Peanuts: Trigger for recorded moderate peanut allergy.',
-      time: 'Yesterday',
-    },
-    {
-      query: 'Steamed Ragi Idli + Sambar',
-      verdict: 'SAFE',
-      reason: 'Zero allergen conflicts. Rich in bioavailable calcium.',
-      time: '2 days ago',
-    },
-  ])
+  const [auditHistory, setAuditHistory] = useState<any[]>([])
 
   useEffect(() => {
     if (initialQuery) {
@@ -90,16 +75,6 @@ export function SafetyAuditorPage() {
     } else {
       setList([...list, item])
     }
-  }
-
-  const handleAddCustom = (category: 'allergy' | 'condition' | 'medication' | 'supplement') => {
-    if (!customInput.trim()) return
-    if (category === 'allergy') setAllergies([...allergies, customInput.trim()])
-    if (category === 'condition') setMedicalConditions([...medicalConditions, customInput.trim()])
-    if (category === 'medication') setMedications([...medications, customInput.trim()])
-    if (category === 'supplement') setSupplements([...supplements, customInput.trim()])
-    setCustomInput('')
-    setCustomCategory(null)
   }
 
   const handleSaveProfile = (e: React.FormEvent) => {

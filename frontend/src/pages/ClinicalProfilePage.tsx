@@ -4,8 +4,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useProfile } from '@/hooks/useProfile'
 import { calculateICMRTargets } from '@/lib/nutrition'
 import {
-  UserCheck, ShieldCheck, Sparkles, Check,
-  LogOut, RefreshCw, Calculator, Heart
+  ShieldCheck, Check,
+  LogOut, Calculator
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -56,10 +56,8 @@ export function ClinicalProfilePage() {
   }, [profile, user])
 
   // Chips
-  const [selectedDiets, setSelectedDiets] = useState<string[]>(['Vegetarian', 'High Protein'])
-  const [selectedCuisines, setSelectedCuisines] = useState<string[]>([
-    'South Indian', 'North Indian', 'Kerala', 'Mediterranean'
-  ])
+  const [selectedDiets, setSelectedDiets] = useState<string[]>([])
+  const [selectedCuisines, setSelectedCuisines] = useState<string[]>([])
 
   // Daily Targets
   const [cal, setCal] = useState(targets?.calories_kcal || 2000)

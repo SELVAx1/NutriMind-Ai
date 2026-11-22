@@ -101,7 +101,7 @@ export function LoginPage() {
           label="Email"
           type="email"
           required
-          placeholder="you@example.com"
+          placeholder="Your email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           icon={<Mail className="w-4 h-4" />}
@@ -112,8 +112,15 @@ export function LoginPage() {
             <span className="text-[11px] font-bold text-[#7B5E4A]">Password</span>
             <button
               type="button"
-              onClick={() => alert('Password reset instructions dispatched to your email address.')}
-              className="text-[11px] text-[#A67C52] hover:text-[#3B2A20] hover:underline"
+              onClick={async () => {
+                if (!email.trim()) { setError('Enter your email address first, then click Forgot password.'); return }
+                try {
+                  await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/auth/login` })
+                  setError('')
+                  alert('Password reset link sent to your email.')
+                } catch { setError('Could not send reset link. Try again.') }
+              }}
+              className="text-[11px] text-[#A67C52] hover:text-[#3B2A20] hover:underline cursor-pointer"
             >
               Forgot password?
             </button>

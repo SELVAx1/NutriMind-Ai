@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useClinicalSafety } from '@/hooks/useClinicalSafety'
-import { Check, AlertTriangle } from 'lucide-react'
+import { Check } from 'lucide-react'
 import clsx from 'clsx'
 
 const COMMON_SYMPTOMS = [

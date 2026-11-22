@@ -42,10 +42,16 @@ export interface MealPlanResponse {
 }
 
 export interface SwapAlternative {
+  food_id?: string
   name: string
   name_tamil?: string
   calories: number
   protein: number
+  carbs: number
+  fat: number
+  fibre: number
+  iron: number
+  calcium: number
   cost: number
   prep_time_min: number
   reason: string
@@ -105,7 +111,7 @@ export function useMealPlan() {
     setLoading(true)
     setError(null)
     try {
-      const data = await apiPost<any>('/api/meals/plan', { days: day })
+      const data = await apiPost<any>('/api/meals/plan', { days: day }, true)
       if (data && data.meals && data.meals.length > 0) {
         const normalizedPlan: MealPlanResponse = {
           plan_id: data.plan_id || 'plan-' + Date.now(),
@@ -153,15 +159,24 @@ export function useMealPlan() {
             protein: origNutrition.protein || data.original?.protein || 0,
             cost: data.original?.cost || 0,
           },
-          alternatives: data.alternatives.map((alt: any) => ({
-            name: alt.name,
-            name_tamil: alt.name_tamil,
-            calories: Math.round(alt.calories ?? alt.nutrition?.calories ?? 0),
-            protein: Math.round(alt.protein ?? alt.nutrition?.protein ?? 0),
-            cost: alt.cost ?? alt.estimated_cost ?? 0,
-            prep_time_min: alt.prep_time_min ?? 15,
-            reason: alt.reason || alt.explanation || 'Nutritionally comparable alternative.'
-          }))
+          alternatives: data.alternatives.map((alt: any) => {
+            const n = alt.nutrition || {}
+            return {
+              food_id: alt.food_id,
+              name: alt.name,
+              name_tamil: alt.name_tamil,
+              calories: Math.round(n.calories ?? alt.calories ?? 0),
+              protein: Math.round((n.protein ?? alt.protein ?? 0) * 10) / 10,
+              carbs: Math.round((n.carbs ?? alt.carbs ?? 0) * 10) / 10,
+              fat: Math.round((n.fat ?? alt.fat ?? 0) * 10) / 10,
+              fibre: Math.round((n.fibre ?? alt.fibre ?? 0) * 10) / 10,
+              iron: Math.round((n.iron ?? alt.iron ?? 0) * 10) / 10,
+              calcium: Math.round((n.calcium ?? alt.calcium ?? 0) * 10) / 10,
+              cost: alt.cost ?? alt.estimated_cost ?? 0,
+              prep_time_min: alt.prep_time_min ?? 15,
+              reason: alt.reason || alt.explanation || 'Nutritionally comparable alternative.',
+            }
+          })
         }
         setSwapData(normalizedSwap)
       } else {

@@ -1,15 +1,10 @@
 import { useState, useEffect } from 'react'
 import { apiPost, apiGet } from '@/lib/api'
-import { Card } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
 import {
-  Sparkles, TrendingUp, TrendingDown, ShieldCheck,
-  Activity, DollarSign, Leaf, Droplets, Zap, AlertTriangle,
-  RotateCcw, Check, ArrowRight, Info
+  Sparkles, ShieldCheck,
+  Leaf, AlertTriangle,
+  RotateCcw
 } from 'lucide-react'
-import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid
-} from 'recharts'
 import clsx from 'clsx'
 
 const TIMEFRAMES = [7, 14, 30, 60, 90]
@@ -66,13 +61,12 @@ export function NutriTwinPage() {
       .catch(() => {})
   }, [])
 
-  // NutriRescue State
-  const [rescueCheatMeal, setRescueCheatMeal] = useState('Chicken Biryani (Large) + Gulab Jamun')
+  const [rescueCheatMeal, setRescueCheatMeal] = useState('')
   const [calculatingRescue, setCalculatingRescue] = useState(false)
+  const [simError, setSimError] = useState('')
 
-  // Custom What-If Simulator State (Feature 6)
-  const [customReplaceFood, setCustomReplaceFood] = useState('Cooked rice')
-  const [customWithFood, setCustomWithFood] = useState('Ragi porridge')
+  const [customReplaceFood, setCustomReplaceFood] = useState('')
+  const [customWithFood, setCustomWithFood] = useState('')
   const [customQuantity, setCustomQuantity] = useState(200)
   const [customSimResult, setCustomSimResult] = useState<any | null>(null)
   const [customSimLoading, setCustomSimLoading] = useState(false)
@@ -80,6 +74,7 @@ export function NutriTwinPage() {
   const handleRunCustomSim = async () => {
     if (!customReplaceFood.trim() || !customWithFood.trim()) return
     setCustomSimLoading(true)
+    setSimError('')
     try {
       const data = await apiPost<any>('/api/analytics/what-if', {
         replace_food: customReplaceFood,
@@ -90,31 +85,23 @@ export function NutriTwinPage() {
       if (data && !data.error) {
         setCustomSimResult(data)
       } else {
-        setCustomSimResult({
-          original: { name: customReplaceFood, nutrition_per_serving: { calories: 260, protein: 5.4, fibre: 0.8, iron: 0.4, calcium: 20 } },
-          replacement: { name: customWithFood, nutrition_per_serving: { calories: 220, protein: 7.0, fibre: 7.2, iron: 7.8, calcium: 688 } },
-          daily_delta: { calories: -40, protein: 1.6, fibre: 6.4, iron: 7.4, calcium: 668 },
-          total_delta: { calories: -40 * timeframe, protein: +(1.6 * timeframe).toFixed(1), fibre: +(6.4 * timeframe).toFixed(1), iron: +(7.4 * timeframe).toFixed(1), calcium: +(668 * timeframe).toFixed(0) },
-          disclaimer: 'Calculated using IFCT 2017 & ICMR-NIN verified nutritional compositions.'
-        })
+        setSimError(data?.error || 'Could not find one or both foods in the database. Try different names.')
+        setCustomSimResult(null)
       }
     } catch {
-      setCustomSimResult({
-        original: { name: customReplaceFood, nutrition_per_serving: { calories: 260, protein: 5.4, fibre: 0.8, iron: 0.4, calcium: 20 } },
-        replacement: { name: customWithFood, nutrition_per_serving: { calories: 220, protein: 7.0, fibre: 7.2, iron: 7.8, calcium: 688 } },
-        daily_delta: { calories: -40, protein: 1.6, fibre: 6.4, iron: 7.4, calcium: 668 },
-        total_delta: { calories: -40 * timeframe, protein: +(1.6 * timeframe).toFixed(1), fibre: +(6.4 * timeframe).toFixed(1), iron: +(7.4 * timeframe).toFixed(1), calcium: +(668 * timeframe).toFixed(0) },
-        disclaimer: 'Calculated using IFCT 2017 & ICMR-NIN verified nutritional compositions.'
-      })
+      setSimError('Could not connect to the backend. Make sure the server is running.')
+      setCustomSimResult(null)
     } finally {
       setCustomSimLoading(false)
     }
   }
   const [rescuePlan, setRescuePlan] = useState<any | null>(null)
+  const [rescueError, setRescueError] = useState('')
 
   const handleRunRescue = async () => {
     if (!rescueCheatMeal.trim()) return
     setCalculatingRescue(true)
+    setRescueError('')
     try {
       const data = await apiPost<any>('/api/meals/rescue', {
         actual_food: rescueCheatMeal,
@@ -122,39 +109,25 @@ export function NutriTwinPage() {
       })
       if (data && data.revised_dinner) {
         setRescuePlan({
-          deviatedCalories: data.actual_meal?.nutrition?.calories ? `+${data.actual_meal.nutrition.calories} kcal consumed` : '+650 kcal deviation',
-          deviatedFat: data.actual_meal?.nutrition?.fat ? `+${data.actual_meal.nutrition.fat}g fats` : '+24g fats',
-          deviatedProtein: data.actual_meal?.nutrition?.protein ? `+${data.actual_meal.nutrition.protein}g protein` : '+14g protein',
+          deviatedCalories: data.actual_meal?.nutrition?.calories ? `+${data.actual_meal.nutrition.calories} kcal consumed` : 'Deviation calculated',
+          deviatedFat: data.actual_meal?.nutrition?.fat ? `+${data.actual_meal.nutrition.fat}g fats` : '',
+          deviatedProtein: data.actual_meal?.nutrition?.protein ? `+${data.actual_meal.nutrition.protein}g protein` : '',
           immediateAction: 'NutriRescue AI Adaptive Recalibration',
           recoveryDinner: {
-            name: data.revised_dinner.food_name || 'Clear Rasam + Steamed Sundal + Methi Thepla',
-            cals: data.revised_dinner.nutrition?.calories || 240,
-            pro: data.revised_dinner.nutrition?.protein || 13.0,
-            carbs: data.revised_dinner.nutrition?.carbs || 34,
-            fat: data.revised_dinner.nutrition?.fat || 2.8,
-            note: data.revised_dinner.explanation || 'Light fiber-dense dinner restores digestion and keeps net daily calories in balance.',
+            name: data.revised_dinner.food_name || 'Suggested recovery meal',
+            cals: data.revised_dinner.nutrition?.calories || 0,
+            pro: data.revised_dinner.nutrition?.protein || 0,
+            carbs: data.revised_dinner.nutrition?.carbs || 0,
+            fat: data.revised_dinner.nutrition?.fat || 0,
+            note: data.revised_dinner.explanation || data.summary || 'Adjusted dinner to compensate for the deviation.',
           },
-          nextDayProtocol: 'High-hydration start with buttermilk and roasted jeera. Normal meal schedule resumes tomorrow lunch.',
+          nextDayProtocol: 'Resume normal meal schedule tomorrow. Stay hydrated.',
         })
-        return
+      } else {
+        setRescueError(data?.error || data?.summary || 'Could not generate a recovery plan. Check your profile and backend.')
       }
-      throw new Error('Fallback')
     } catch {
-      setRescuePlan({
-        deviatedCalories: '+650 kcal over target',
-        deviatedFat: '+24g fats',
-        deviatedProtein: '+14g protein',
-        immediateAction: 'NutriRescue Adaptive Correction',
-        recoveryDinner: {
-          name: 'Clear Vegetable Rasam + Steamed Sundal + Methi Thepla',
-          cals: 240,
-          pro: 13.0,
-          carbs: 34,
-          fat: 2.8,
-          note: 'Light fiber-dense dinner restores digestion, flushes excess sodium, and keeps net daily calories in strict balance.',
-        },
-        nextDayProtocol: 'High-hydration start with buttermilk and roasted jeera. Normal meal schedule resumes tomorrow lunch.',
-      })
+      setRescueError('Could not connect to the backend. Make sure the server is running.')
     } finally {
       setCalculatingRescue(false)
     }
@@ -323,6 +296,12 @@ export function NutriTwinPage() {
               </div>
             </div>
 
+            {simError && (
+              <div className="p-4 rounded-2xl bg-[#FDF0EE] border border-[#F3C3BC] text-[12px] text-[#8F3325] font-semibold">
+                {simError}
+              </div>
+            )}
+
             {customSimResult && (
               <div className="mt-3 p-4 bg-[#FAF7F0] border border-[#D1B89A] rounded-xl space-y-3">
                 <div className="flex items-center justify-between text-xs font-bold text-[#3B2A20]">
@@ -406,6 +385,12 @@ export function NutriTwinPage() {
           </div>
 
           {/* Rescue Output Plan */}
+          {rescueError && (
+            <div className="p-4 rounded-2xl bg-[#FDF0EE] border border-[#F3C3BC] text-[12px] text-[#8F3325] font-semibold">
+              {rescueError}
+            </div>
+          )}
+
           {rescuePlan && (
             <div className="p-6 bg-white border border-[#D1B89A] rounded-3xl shadow-sm space-y-5 animate-in fade-in">
               <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#D1B89A]/40">

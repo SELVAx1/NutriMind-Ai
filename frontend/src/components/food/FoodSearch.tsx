@@ -1,9 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, X } from 'lucide-react'
+import { Search, X, Plus } from 'lucide-react'
 import { useFoodSearch } from '@/hooks/useFood'
 import type { FoodItem } from '@/types/database'
 
-export function FoodSearch({ onSelect }: { onSelect: (food: FoodItem) => void }) {
+interface FoodSearchProps {
+  onSelect: (food: FoodItem) => void
+  onCreateCustom?: (name: string) => void
+}
+
+export function FoodSearch({ onSelect, onCreateCustom }: FoodSearchProps) {
   const { query, setQuery, results, loading } = useFoodSearch()
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -18,6 +23,10 @@ export function FoodSearch({ onSelect }: { onSelect: (food: FoodItem) => void })
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const trimmedQuery = query.trim()
+  const hasResults = results.length > 0
+  const showDropdown = isOpen && trimmedQuery.length > 0
+
   return (
     <div ref={containerRef} className="relative w-full">
       <div className="relative">
@@ -28,13 +37,14 @@ export function FoodSearch({ onSelect }: { onSelect: (food: FoodItem) => void })
             setQuery(e.target.value)
             setIsOpen(true)
           }}
-          onFocus={() => setIsOpen(true)}
-          placeholder="Search Indian dishes (e.g., Idli, Dosa, Ragi, Palak...)"
+          onFocus={() => { if (trimmedQuery) setIsOpen(true) }}
+          placeholder="Search foods (e.g., Idli, Dosa, Ragi, Palak...)"
           className="w-full h-12 pl-11 pr-10 rounded-2xl bg-[#FAF7F0] border border-[#D1B89A] text-[14px] text-[#3B2A20] placeholder:text-[#A67C52]/60 focus:bg-white focus:border-[#7B5E4A] focus:ring-3 focus:ring-[#7B5E4A]/15 transition-all outline-none"
         />
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7B5E4A]" />
         {query && (
           <button
+            type="button"
             onClick={() => {
               setQuery('')
               setIsOpen(false)
@@ -46,21 +56,15 @@ export function FoodSearch({ onSelect }: { onSelect: (food: FoodItem) => void })
         )}
       </div>
 
-      {isOpen && (results.length > 0 || loading) && (
+      {showDropdown && (
         <div className="absolute top-14 left-0 right-0 z-50 bg-white border border-[#D1B89A] rounded-3xl shadow-[0_20px_50px_rgba(59,42,32,0.12)] overflow-hidden max-h-72 overflow-y-auto">
           {loading && (
             <div className="p-4 text-center text-[12px] font-semibold text-[#7B5E4A]">
-              Searching IFCT 2017 database...
+              Searching database...
             </div>
           )}
 
-          {!loading && results.length === 0 && (
-            <div className="p-4 text-center text-[12px] text-[#7B5E4A]">
-              No matching Indian foods found.
-            </div>
-          )}
-
-          {!loading &&
+          {!loading && hasResults &&
             results.map(food => (
               <div
                 key={food.id}
@@ -81,7 +85,7 @@ export function FoodSearch({ onSelect }: { onSelect: (food: FoodItem) => void })
                     )}
                   </div>
                   <span className="text-[10px] uppercase font-bold text-[#7B5E4A] tracking-wider">
-                    {food.category || 'Standard Food'}
+                    {food.category || 'Food'}
                   </span>
                 </div>
 
@@ -97,6 +101,28 @@ export function FoodSearch({ onSelect }: { onSelect: (food: FoodItem) => void })
                 )}
               </div>
             ))}
+
+          {!loading && !hasResults && (
+            <div className="p-4 text-center">
+              <p className="text-[12px] text-[#7B5E4A] mb-3">
+                No matching foods found for "{trimmedQuery}".
+              </p>
+              {onCreateCustom && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCreateCustom(trimmedQuery)
+                    setIsOpen(false)
+                    setQuery('')
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#7B5E4A] text-white text-[12px] font-bold hover:bg-[#3B2A20] transition-colors cursor-pointer"
+                >
+                  <Plus size={14} />
+                  Add "{trimmedQuery}" as custom food
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

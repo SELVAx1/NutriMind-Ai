@@ -15,30 +15,47 @@ export function OnboardingPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  // Form State
   const [fullName, setFullName] = useState('')
-  const [age, setAge] = useState(25)
+  const [age, setAge] = useState('')
   const [gender, setGender] = useState<'male' | 'female' | 'other'>('female')
-  const [heightCm, setHeightCm] = useState(165)
-  const [weightKg, setWeightKg] = useState(60)
-  const [dietType, setDietType] = useState<any>('veg')
+  const [heightCm, setHeightCm] = useState('')
+  const [weightKg, setWeightKg] = useState('')
+  const [dietType, setDietType] = useState<string>('veg')
   const [region, setRegion] = useState('South India (Tamil Nadu)')
-  const [activity, setActivity] = useState<any>('moderate')
+  const [activity, setActivity] = useState<string>('moderate')
   const [budget, setBudget] = useState(200)
+
+  function validateStep1(): string | null {
+    if (!fullName.trim()) return 'Please enter your name.'
+    const ageNum = parseInt(age, 10)
+    if (!age || isNaN(ageNum) || ageNum < 5 || ageNum > 120) return 'Please enter a valid age (5-120).'
+    const h = parseFloat(heightCm)
+    if (!heightCm || isNaN(h) || h < 50 || h > 300) return 'Please enter a valid height (50-300 cm).'
+    const w = parseFloat(weightKg)
+    if (!weightKg || isNaN(w) || w < 10 || w > 500) return 'Please enter a valid weight (10-500 kg).'
+    return null
+  }
+
+  function handleStep1Next() {
+    const err = validateStep1()
+    if (err) { setError(err); return }
+    setError('')
+    setStep(2)
+  }
 
   async function handleFinish() {
     setSaving(true)
     setError('')
     try {
       await createProfile({
-        full_name: fullName || 'NutriMind Member',
-        age,
+        full_name: fullName.trim(),
+        age: parseInt(age, 10),
         gender,
-        height_cm: heightCm,
-        weight_kg: weightKg,
-        diet_type: dietType,
+        height_cm: parseFloat(heightCm),
+        weight_kg: parseFloat(weightKg),
+        diet_type: dietType as any,
         region,
-        activity_level: activity,
+        activity_level: activity as any,
         budget_daily: budget,
         max_cooking_min: 30,
       })
@@ -49,22 +66,24 @@ export function OnboardingPage() {
     }
   }
 
+  const preventScroll = (e: React.WheelEvent) => {
+    (e.target as HTMLInputElement).blur()
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-xl">
-        {/* Brand */}
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-12 h-12 rounded-3xl bg-gradient-to-br from-[#7B5E4A] to-[#3B2A20] flex items-center justify-center text-white shadow-lg shadow-[#7B5E4A]/30 mb-3">
             <Apple className="w-7 h-7 text-[#F2E7D5] stroke-[2.5]" />
           </div>
-          <h1 className="page-title text-[26px] font-extrabold text-[#3B2A20] font-heading">
+          <h1 className="text-[26px] font-extrabold text-[#3B2A20] font-heading">
             Welcome to Nutri<span className="text-[#7B5E4A]">Mind</span> AI
           </h1>
-          <p className="card-subtitle text-[12px] text-[#7B5E4A] mt-1 font-body">
-            Let's configure your scientific Indian plate profile in 3 quick steps
+          <p className="text-[12px] text-[#7B5E4A] mt-1">
+            Set up your nutrition profile in 3 quick steps
           </p>
 
-          {/* Stepper Dots */}
           <div className="flex items-center gap-2 mt-4">
             {[1, 2, 3].map((s) => (
               <div
@@ -88,31 +107,31 @@ export function OnboardingPage() {
             </div>
           )}
 
-          {/* STEP 1: Biometrics */}
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in duration-200">
               <div className="border-b border-[#D1B89A]/40 pb-3 mb-4">
-                <h2 className="card-title text-[16px] font-bold text-[#3B2A20] flex items-center gap-2 font-heading">
+                <h2 className="text-[16px] font-bold text-[#3B2A20] flex items-center gap-2 font-heading">
                   <User className="w-4 h-4 text-[#7B5E4A]" />
                   Step 1: Your Biometrics
                 </h2>
-                <p className="card-subtitle text-[11.5px] text-[#7B5E4A]">Used to calculate your basal metabolic rate (Mifflin-St Jeor)</p>
+                <p className="text-[11.5px] text-[#7B5E4A]">Used to calculate your basal metabolic rate (Mifflin-St Jeor)</p>
               </div>
 
               <div>
-                <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Your Full Name</label>
+                <label className="block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Your Full Name</label>
                 <input
                   type="text"
-                  placeholder="e.g. Kaniska Selvaraj"
+                  placeholder="Enter your full name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-4 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
+                  autoComplete="name"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Gender</label>
+                  <label className="block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Gender</label>
                   <select
                     value={gender}
                     onChange={(e) => setGender(e.target.value as any)}
@@ -124,11 +143,17 @@ export function OnboardingPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Age</label>
+                  <label className="block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Age</label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={age}
-                    onChange={(e) => setAge(Number(e.target.value))}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D/g, '')
+                      if (v.length <= 3) setAge(v)
+                    }}
+                    placeholder="25"
                     className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-3 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
                   />
                 </div>
@@ -136,27 +161,37 @@ export function OnboardingPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Height (cm)</label>
+                  <label className="block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Height (cm)</label>
                   <input
                     type="number"
+                    inputMode="decimal"
+                    min={50}
+                    max={300}
                     value={heightCm}
-                    onChange={(e) => setHeightCm(Number(e.target.value))}
+                    onChange={(e) => setHeightCm(e.target.value)}
+                    onWheel={preventScroll}
+                    placeholder="165"
                     className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-3 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
                   />
                 </div>
                 <div>
-                  <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Weight (kg)</label>
+                  <label className="block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Weight (kg)</label>
                   <input
                     type="number"
+                    inputMode="decimal"
+                    min={10}
+                    max={500}
                     value={weightKg}
-                    onChange={(e) => setWeightKg(Number(e.target.value))}
+                    onChange={(e) => setWeightKg(e.target.value)}
+                    onWheel={preventScroll}
+                    placeholder="60"
                     className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-3 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
                   />
                 </div>
               </div>
 
               <div className="pt-4 flex justify-end">
-                <Button variant="primary" onClick={() => setStep(2)}>
+                <Button variant="primary" onClick={handleStep1Next}>
                   <span>Continue</span>
                   <ArrowRight className="w-4 h-4 ml-1" />
                 </Button>
@@ -164,19 +199,18 @@ export function OnboardingPage() {
             </div>
           )}
 
-          {/* STEP 2: Diet & Regional Food Habits */}
           {step === 2 && (
             <div className="space-y-4 animate-in fade-in duration-200">
               <div className="border-b border-[#D1B89A]/40 pb-3 mb-4">
-                <h2 className="card-title text-[16px] font-bold text-[#3B2A20] flex items-center gap-2 font-heading">
+                <h2 className="text-[16px] font-bold text-[#3B2A20] flex items-center gap-2 font-heading">
                   <Utensils className="w-4 h-4 text-[#7B5E4A]" />
                   Step 2: Dietary Habits & Region
                 </h2>
-                <p className="card-subtitle text-[11.5px] text-[#7B5E4A]">Tailors dish recommendations to your native regional palate</p>
+                <p className="text-[11.5px] text-[#7B5E4A]">Tailors recommendations to your regional palate</p>
               </div>
 
               <div>
-                <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1.5">Diet Type</label>
+                <label className="block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1.5">Diet Type</label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { id: 'veg', label: 'Vegetarian', desc: 'Lacto-vegetarian' },
@@ -195,23 +229,23 @@ export function OnboardingPage() {
                       }`}
                     >
                       <p className="text-[13px] font-bold font-heading">{d.label}</p>
-                      <p className="card-subtitle text-[10px] text-[#7B5E4A]">{d.desc}</p>
+                      <p className="text-[10px] text-[#7B5E4A]">{d.desc}</p>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Region / Cuisine</label>
+                <label className="block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Region / Cuisine</label>
                 <select
                   value={region}
                   onChange={(e) => setRegion(e.target.value)}
                   className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-3 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
                 >
-                  <option value="South India (Tamil Nadu)">South India (Tamil Nadu - Millets & Idlis)</option>
-                  <option value="South India (Kerala)">South India (Kerala - Matta Rice & Coconut)</option>
-                  <option value="South India (Karnataka)">South India (Karnataka - Ragi Mudde & Saaru)</option>
-                  <option value="North India">North India (Roti, Rajma & Paneer)</option>
+                  <option value="South India (Tamil Nadu)">South India (Tamil Nadu)</option>
+                  <option value="South India (Kerala)">South India (Kerala)</option>
+                  <option value="South India (Karnataka)">South India (Karnataka)</option>
+                  <option value="North India">North India</option>
                   <option value="West India">West India (Gujarat / Maharashtra)</option>
                 </select>
               </div>
@@ -229,20 +263,19 @@ export function OnboardingPage() {
             </div>
           )}
 
-          {/* STEP 3: Budget & Lifestyle */}
           {step === 3 && (
             <div className="space-y-4 animate-in fade-in duration-200">
               <div className="border-b border-[#D1B89A]/40 pb-3 mb-4">
-                <h2 className="card-title text-[16px] font-bold text-[#3B2A20] flex items-center gap-2 font-heading">
+                <h2 className="text-[16px] font-bold text-[#3B2A20] flex items-center gap-2 font-heading">
                   <IndianRupee className="w-4 h-4 text-[#7B5E4A]" />
                   Step 3: Budget & Activity
                 </h2>
-                <p className="card-subtitle text-[11.5px] text-[#7B5E4A]">Ensures meal plans are affordable and energy-matched</p>
+                <p className="text-[11.5px] text-[#7B5E4A]">Ensures meal plans are affordable and energy-matched</p>
               </div>
 
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="eyebrow-label text-[10px] font-bold text-[#7B5E4A] uppercase">Daily Food Budget</label>
+                  <label className="text-[10px] font-bold text-[#7B5E4A] uppercase">Daily Food Budget</label>
                   <span className="text-[12px] font-bold text-[#7B5E4A]">₹{budget} / day</span>
                 </div>
                 <input
@@ -262,10 +295,10 @@ export function OnboardingPage() {
               </div>
 
               <div>
-                <label className="eyebrow-label block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Activity Level</label>
+                <label className="block text-[10px] font-bold text-[#7B5E4A] uppercase mb-1">Activity Level</label>
                 <select
                   value={activity}
-                  onChange={(e) => setActivity(e.target.value as any)}
+                  onChange={(e) => setActivity(e.target.value)}
                   className="w-full bg-[#FAF7F0] border border-[#D1B89A] rounded-2xl px-3 py-2.5 text-[14px] font-medium text-[#3B2A20] focus:outline-none focus:border-[#7B5E4A]"
                 >
                   <option value="sedentary">Sedentary (Desk Job)</option>
@@ -277,7 +310,7 @@ export function OnboardingPage() {
 
               <div className="p-3 rounded-2xl bg-[#FAF7F0] border border-[#D1B89A] flex items-center gap-2 text-[12px] text-[#7B5E4A] font-semibold">
                 <ShieldCheck className="w-4 h-4 shrink-0 text-[#7B5E4A]" />
-                <span>Deterministic ICMR RDA targets will be generated automatically.</span>
+                <span>ICMR RDA targets will be calculated automatically from your profile.</span>
               </div>
 
               <div className="pt-4 flex justify-between">

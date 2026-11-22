@@ -6,9 +6,8 @@ import { Button } from '@/components/ui/Button'
 import {
   Flame, Clock, IndianRupee, RefreshCw, ArrowRightLeft,
   Sunrise, Sun, Cookie, Moon, Sparkles, X,
-  ShoppingBag, Check, ArrowRight, ShieldCheck, CheckCircle2
+  ShoppingBag, Check, ArrowRight
 } from 'lucide-react'
-import clsx from 'clsx'
 
 const MEAL_ICONS: Record<string, { label: string; icon: typeof Sunrise; color: string; bg: string }> = {
   breakfast: { label: 'Breakfast', icon: Sunrise, color: 'text-[#A67C52]', bg: 'bg-[#F2E7D5]' },
@@ -22,23 +21,55 @@ export function PlannerPage() {
   const { plan, setPlan, loading, initialLoading, error, generatePlan, swapData, swapping, swapFood, clearSwap } = useMealPlan()
 
 
+  const [planDays, setPlanDays] = useState(1)
   const [swappingId, setSwappingId] = useState<string | null>(null)
   const [swappedNotice, setSwappedNotice] = useState<string | null>(null)
 
-  function applySwap(altName: string) {
+  function applySwap(alt: typeof swapData extends null ? never : NonNullable<typeof swapData>['alternatives'][number]) {
     if (plan && swappingId) {
       const updatedMeals = plan.meals.map(m =>
-        m.food_id === swappingId ? { ...m, food_name: altName } : m
+        m.food_id === swappingId
+          ? {
+              ...m,
+              food_name: alt.name,
+              food_name_tamil: alt.name_tamil,
+              food_id: alt.food_id || m.food_id,
+              estimated_cost: alt.cost,
+              nutrition: {
+                calories: alt.calories,
+                protein: alt.protein,
+                carbs: alt.carbs,
+                fat: alt.fat,
+                fibre: alt.fibre,
+                iron: alt.iron,
+                calcium: alt.calcium,
+              },
+            }
+          : m
       )
-      setPlan({ ...plan, meals: updatedMeals })
-      setSwappedNotice(`Swapped to ${altName}! Parity & allergen safety confirmed.`)
+      const newTotals = updatedMeals.reduce(
+        (acc, m) => ({
+          calories: acc.calories + (m.nutrition?.calories || 0),
+          protein: acc.protein + (m.nutrition?.protein || 0),
+          carbs: acc.carbs + (m.nutrition?.carbs || 0),
+          fat: acc.fat + (m.nutrition?.fat || 0),
+          fibre: acc.fibre + (m.nutrition?.fibre || 0),
+          iron: acc.iron + (m.nutrition?.iron || 0),
+          calcium: acc.calcium + (m.nutrition?.calcium || 0),
+          cost: acc.cost + (m.estimated_cost || 0),
+          cooking_time_min: acc.cooking_time_min + (m.prep_time_min || 0),
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, iron: 0, calcium: 0, cost: 0, cooking_time_min: 0 }
+      )
+      setPlan({ ...plan, meals: updatedMeals, daily_totals: newTotals })
+      setSwappedNotice(`Swapped to ${alt.name}! Nutrition updated.`)
       setTimeout(() => setSwappedNotice(null), 3500)
     }
     clearSwap()
   }
 
   const handleGenerate = () => {
-    generatePlan(1)
+    generatePlan(planDays)
   }
 
   const totals = plan?.daily_totals || { calories: 0, protein: 0, carbs: 0, fat: 0, fibre: 0, iron: 0, calcium: 0, cost: 0, cooking_time_min: 0 }
@@ -67,6 +98,15 @@ export function PlannerPage() {
               </Button>
             </Link>
           )}
+          <select
+            value={planDays}
+            onChange={e => setPlanDays(Number(e.target.value))}
+            className="px-2.5 py-1.5 rounded-xl border border-[#D1B89A] bg-white text-[#3B2A20] text-xs font-bold cursor-pointer focus:outline-none focus:border-[#7B5E4A]"
+          >
+            <option value={1}>Today</option>
+            <option value={3}>3 Days</option>
+            <option value={7}>Full Week</option>
+          </select>
           <Button onClick={handleGenerate} loading={loading} size="sm">
             <RefreshCw size={14} /> Generate plan
           </Button>
@@ -277,7 +317,7 @@ export function PlannerPage() {
                       <span>{alt.calories} kcal</span>
                       <span className="text-[#7B5E4A]">{alt.protein}g protein</span>
                     </div>
-                    <Button size="xs" onClick={() => applySwap(alt.name)}>
+                    <Button size="xs" onClick={() => applySwap(alt)}>
                       Select Swap <ArrowRight size={12} />
                     </Button>
                   </div>

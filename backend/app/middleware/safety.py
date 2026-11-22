@@ -1,16 +1,20 @@
 MEDICAL_EMERGENCY_KEYWORDS = [
     "heart attack", "stroke", "choking", "anaphylaxis",
-    "can't breathe", "chest pain", "emergency",
+    "can't breathe", "cannot breathe", "chest pain", "emergency",
+    "throat swelling", "swelling in my throat", "swollen throat",
+    "difficulty breathing", "trouble breathing", "severe allergic reaction",
+    "loss of consciousness", "unconscious", "fainted",
 ]
 
 DIAGNOSIS_PATTERNS = [
     "do i have", "am i deficient", "diagnose",
     "is this a sign of", "do i suffer from",
+    "prescribe", "what medication", "what drug",
 ]
 
 UNSAFE_DIET_PATTERNS = [
     "500 calorie diet", "zero carb", "water fast",
-    "extreme weight loss", "starvation",
+    "extreme weight loss", "starvation", "dry fasting",
 ]
 
 

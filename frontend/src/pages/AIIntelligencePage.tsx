@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { useClinicalSafety } from '@/hooks/useClinicalSafety'
 import { apiPost } from '@/lib/api'
 import {
-  BrainCircuit, Sparkles, ShieldCheck, Zap,
-  CheckCircle2, AlertTriangle, BookOpen, ChevronRight, Apple
+  BrainCircuit, Zap
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -101,7 +100,7 @@ const GLOSSARY_TERMS = [
 ]
 
 export function AIIntelligencePage() {
-  const { runSafetyAudit, addAuditLog } = useClinicalSafety()
+  const { runSafetyAudit } = useClinicalSafety()
   const [inputMeal, setInputMeal] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [glossaryMode, setGlossaryMode] = useState<'beginner' | 'advanced'>('beginner')

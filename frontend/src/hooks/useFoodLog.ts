@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { FoodLog, FoodLogItem, FoodItem } from '@/types/database'
@@ -12,7 +12,7 @@ export function useTodaysLogs() {
   const [logs, setLogs] = useState<FoodLogWithItems[]>([])
   const [loading, setLoading] = useState(true)
 
-  async function fetchLogs() {
+  const fetchLogs = useCallback(async () => {
     if (!user) {
       setLogs([])
       setLoading(false)
@@ -30,11 +30,11 @@ export function useTodaysLogs() {
 
     setLogs((data as FoodLogWithItems[]) || [])
     setLoading(false)
-  }
+  }, [user])
 
   useEffect(() => {
     fetchLogs()
-  }, [user])
+  }, [fetchLogs])
 
   async function logFood(mealType: string, foodItemId: string, quantityG: number) {
     if (!user) throw new Error('Not authenticated')
@@ -70,10 +70,20 @@ export function useTodaysLogs() {
     await fetchLogs()
   }
 
+  async function updateLogItemQuantity(itemId: string, quantityG: number) {
+    if (!user) throw new Error('Not authenticated')
+    const { error } = await supabase
+      .from('food_log_items')
+      .update({ quantity_g: quantityG })
+      .eq('id', itemId)
+    if (error) throw error
+    await fetchLogs()
+  }
+
   async function deleteLogItem(itemId: string) {
     await supabase.from('food_log_items').delete().eq('id', itemId)
     await fetchLogs()
   }
 
-  return { logs, loading, logFood, deleteLogItem, refetch: fetchLogs }
+  return { logs, loading, logFood, updateLogItemQuantity, deleteLogItem, refetch: fetchLogs }
 }

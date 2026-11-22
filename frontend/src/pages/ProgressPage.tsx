@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import { useClinicalSafety } from '@/hooks/useClinicalSafety'
 import { useProfile } from '@/hooks/useProfile'
 import { apiGet } from '@/lib/api'
-import { TrendingUp, Scale, Zap, Activity, Check, Plus, Mail, FileText, Sparkles, Info } from 'lucide-react'
-import clsx from 'clsx'
+import { Check, Mail, Info } from 'lucide-react'
 
 interface WeeklyDay {
   date: string
@@ -22,10 +21,10 @@ export function ProgressPage() {
       .catch(() => {})
   }, [])
 
-  const [date, setDate] = useState('2026-11-16')
-  const [weightKg, setWeightKg] = useState('67.0')
-  const [waistCm, setWaistCm] = useState('81.0')
-  const [bodyFatPct, setBodyFatPct] = useState('23.0')
+  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0])
+  const [weightKg, setWeightKg] = useState('')
+  const [waistCm, setWaistCm] = useState('')
+  const [bodyFatPct, setBodyFatPct] = useState('')
   const [energyRating, setEnergyRating] = useState(4)
   const [notes, setNotes] = useState('')
   const [savedSuccess, setSavedSuccess] = useState(false)
@@ -39,8 +38,8 @@ export function ProgressPage() {
   // Calculations
   const latestMeas = measurements[0]
   const oldestMeas = measurements[measurements.length - 1]
-  const currentWeight = latestMeas ? `${latestMeas.weightKg} kg` : '67.0 kg'
-  const weightDiff = latestMeas && oldestMeas ? (latestMeas.weightKg - oldestMeas.weightKg).toFixed(1) : '-1.5'
+  const currentWeight = latestMeas ? `${latestMeas.weightKg} kg` : '—'
+  const weightDiff = latestMeas && oldestMeas && measurements.length > 1 ? (latestMeas.weightKg - oldestMeas.weightKg).toFixed(1) : '0'
   const changeText = Number(weightDiff) <= 0 ? `${weightDiff} kg` : `+${weightDiff} kg`
 
   const handleSave = (e: React.FormEvent) => {
@@ -125,9 +124,13 @@ export function ProgressPage() {
           </p>
 
           <div className="h-44 flex items-end justify-between gap-4 px-3 pt-6 pb-2 border-b border-[#D1B89A]/50 bg-white rounded-xl">
-            {measurements.slice().reverse().map((m, idx) => {
-              const minW = Math.min(...measurements.map(x => x.weightKg)) - 2
-              const maxW = Math.max(...measurements.map(x => x.weightKg)) + 2
+            {measurements.length === 0 && (
+              <p className="text-xs text-[#7B5E4A] m-auto">No measurements yet. Add one below.</p>
+            )}
+            {measurements.slice().reverse().map((m) => {
+              const weights = measurements.map(x => x.weightKg).filter(w => w > 0)
+              const minW = weights.length > 0 ? Math.min(...weights) - 2 : 0
+              const maxW = weights.length > 0 ? Math.max(...weights) + 2 : 100
               const range = maxW - minW || 1
               const heightPct = Math.max(20, Math.min(95, ((m.weightKg - minW) / range) * 70 + 20))
               return (

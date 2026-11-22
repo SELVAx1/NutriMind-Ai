@@ -76,7 +76,7 @@ Respond as JSON: {{"explanations": ["reason 1", "reason 2", "reason 3"]}}"""
 
     explanations = ["Good nutritional match.", "Good nutritional match.", "Good nutritional match."]
     try:
-        resp = await generate_text(prompt)
+        resp = await generate_text(prompt, json_mode=True)
         json_str = resp
         cleaned = re.sub(r'<think>.*?</think>', '', json_str, flags=re.DOTALL)
         if "```json" in cleaned:

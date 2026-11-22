@@ -20,7 +20,7 @@ import { ChatPage } from '@/pages/ChatPage'
 import { ClinicalProfilePage } from '@/pages/ClinicalProfilePage'
 import { GroceryPage } from '@/pages/GroceryPage'
 import { NutriTwinPage } from '@/pages/NutriTwinPage'
-
+import { NutritionistPage } from '@/pages/NutritionistPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 
@@ -62,7 +62,7 @@ export const router = createBrowserRouter([
       { path: '/profile', element: <ClinicalProfilePage /> },
       { path: '/nutritwin', element: <NutriTwinPage /> },
       { path: '/grocery', element: <GroceryPage /> },
-
+      { path: '/nutritionist', element: <NutritionistPage /> },
       { path: '/settings', element: <SettingsPage /> },
     ],
   }],

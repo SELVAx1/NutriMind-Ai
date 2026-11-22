@@ -94,39 +94,32 @@ export function useProfile() {
     if (!user) throw new Error('Not authenticated')
 
     const payload = { ...data, user_id: user.id }
-
     let savedProfile: UserProfile | null = null
 
-    // 1. Direct Supabase Upsert
-    try {
-      const { data: upserted, error } = await supabase
-        .from('user_profiles')
-        .upsert(payload, { onConflict: 'user_id' })
-        .select()
-        .single()
-
-      if (!error && upserted) {
-        savedProfile = upserted
-      }
-    } catch (e) {
-      console.warn('Direct supabase upsert warning:', e)
-    }
-
-    // 2. Sync to Backend API (computes BMR, TDEE, macros, writes user_nutrition_targets)
+    // Backend API handles upsert + BMR/TDEE/macro calculation
     try {
       const res = await apiPost<{ profile: UserProfile; targets?: NutritionTargets }>('/api/users/profile', payload)
       if (res?.profile) {
-        savedProfile = { ...savedProfile, ...res.profile }
+        savedProfile = res.profile
       }
       if (res?.targets) {
         setTargets(res.targets)
         if (targetsKey) localStorage.setItem(targetsKey, JSON.stringify(res.targets))
       }
     } catch (e) {
-      console.warn('Backend profile sync warning:', e)
+      // Fallback: direct Supabase upsert if backend is down
+      try {
+        const { data: upserted, error } = await supabase
+          .from('user_profiles')
+          .upsert(payload, { onConflict: 'user_id' })
+          .select()
+          .single()
+        if (!error && upserted) savedProfile = upserted
+      } catch {
+        console.warn('Both backend and Supabase writes failed:', e)
+      }
     }
 
-    // Fallback if network was offline
     if (!savedProfile) {
       savedProfile = {
         id: profile?.id || 'local-' + Date.now(),
@@ -136,12 +129,8 @@ export function useProfile() {
       } as UserProfile
     }
 
-    // 3. Immediately persist in local state & localStorage
     setProfile(savedProfile)
-    if (storageKey) {
-      localStorage.setItem(storageKey, JSON.stringify(savedProfile))
-    }
-
+    if (storageKey) localStorage.setItem(storageKey, JSON.stringify(savedProfile))
     return savedProfile
   }
 

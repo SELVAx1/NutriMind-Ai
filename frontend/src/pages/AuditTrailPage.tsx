@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useClinicalSafety } from '@/hooks/useClinicalSafety'
 import {
-  Mail, Download, X, Check
+  Mail, Download, X
 } from 'lucide-react'
 import clsx from 'clsx'
 

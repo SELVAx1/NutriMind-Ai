@@ -52,7 +52,7 @@ export function RegisterPage() {
           label="Full Name"
           type="text"
           required
-          placeholder="e.g. Kaniska Selvaraj"
+          placeholder="Your full name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           icon={<User className="w-4 h-4" />}
@@ -62,7 +62,7 @@ export function RegisterPage() {
           label="Email Address"
           type="email"
           required
-          placeholder="you@domain.com"
+          placeholder="Your email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           icon={<Mail className="w-4 h-4" />}
